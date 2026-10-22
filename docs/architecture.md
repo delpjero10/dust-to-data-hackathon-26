@@ -122,7 +122,8 @@ sequenceDiagram
 ## Where the AI layer connects in (future work)
 
 The AI sits between the user and the raw API: it ingests status/events/maps, decides,
-and calls the same control endpoints above. See `GOALS.md`.
+and calls the same control endpoints above. See `GOALS.md` and
+`docs/communication-now-vs-ai.md` for before/after diagrams.
 
 ```mermaid
 flowchart LR
