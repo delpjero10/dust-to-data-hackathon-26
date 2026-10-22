@@ -38,6 +38,19 @@ sandbox: experiment with device communication, then build the AI layer on top.
 - Keep credentials out of the repo (`.gitignore` already covers `.env*` — use a local
   `.env` for secrets).
 
+## API reference for writing code
+
+- **`hcsdk-production.yaml`** is the machine-readable Home Connect API spec (Swagger 2.0)
+  checked into this repo. **Use it as the source of truth when writing code** — read the
+  exact paths, parameters, request/response schemas, required scopes, and security
+  requirements from this file instead of guessing endpoints from memory.
+- Mapping endpoints live under the `map` tag:
+  - Get information from Cleaning Robot: **maps, rooms, zones, robot position, cleaning
+    summaries** (e.g. `GET /homeappliances/{haId}/map/maps`, occupancy grid, layout,
+    cleaning status, detected objects, rooms, zones).
+  - These require the `CleaningRobot-Map` scope. See the spec for exact definitions
+    (`Map`, `MapOccupancyGrid`, `MapLayout`, `MapRoom`, etc.).
+
 ## Working agreements for this repo
 
 - **Use English for everything** — code comments, docs, commit messages, file contents.
