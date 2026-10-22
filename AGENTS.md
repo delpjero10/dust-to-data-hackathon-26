@@ -62,5 +62,9 @@ sandbox: experiment with device communication, then build the AI layer on top.
 - Keep API calls idempotent and safe where possible.
 - Document any endpoint/interaction you use in code comments or a small `docs/` section so
   the hackathon team can reuse it.
+- **Keep docs in sync with code** — the architecture diagrams and images
+  (`docs/architecture.md`, `docs/communication-now-vs-ai.md` and the `.png` files) must
+  be updated whenever the code/communication flow changes, and before/alongside each push
+  so they never drift out of date.
 - Follow the existing repo conventions once code lands; right now the repo is empty, so
   establish clean, minimal structure (e.g. `src/` for logic, `.env` for secrets).
