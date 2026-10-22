@@ -23,6 +23,11 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `programs` | `GET /homeappliances/{haId}/programs/available` | List available programs |
 | `start [--type X]` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanType`) |
 | `stop` | `DELETE /homeappliances/{haId}/programs/active` | Stop the active program |
+| `settings` | `GET /homeappliances/{haId}/settings` | List device settings (`Settings`) |
+| `maps` | `GET /homeappliances/{haId}/map/maps` | List robot maps (`Map`) |
+| `mapinfo --map-id M [--field F]` | `GET .../map/maps/{M}[/...]` | Map data JSON: occupancyGrid, layout, cleaningStatus, objects, rooms, zones (`Map`) |
+| `robot` | `GET /homeappliances/{haId}/map/robot/position` | Robot position (`Map`) |
+| `summaries` | `GET /homeappliances/{haId}/map/cleaningSummary` | Cleaning summaries (`Map`) |
 
 ## Setup
 

@@ -132,3 +132,120 @@ class HomeConnectClient:
         """GET /homeappliances/{haId}/status — live status values."""
         resp = self._request("GET", f"/homeappliances/{ha_id}/status")
         return resp.json().get("data", {}).get("status", [])
+
+    # -- settings (CleaningRobot-Settings) -----------------------------------
+    def get_settings(self, ha_id: str) -> list[dict]:
+        """GET /homeappliances/{haId}/settings — all settings."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/settings")
+        return resp.json().get("data", {}).get("settings", [])
+
+    def get_setting(self, ha_id: str, key: str) -> dict | None:
+        """GET /homeappliances/{haId}/settings/{key} — a specific setting."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/settings/{key}")
+        return resp.json().get("data")
+
+    def set_setting(self, ha_id: str, key: str, value) -> None:
+        """PUT /homeappliances/{haId}/settings/{key} — set a specific setting.
+
+        Confirm the setting key is writable (constraints.access == "readWrite")
+        before sending, and verify allowed values for enums.
+        """
+        body = {"data": {"key": key, "value": value}}
+        self._request("PUT", f"/homeappliances/{ha_id}/settings/{key}", json=body)
+
+    # -- map (CleaningRobot-Map) ---------------------------------------------
+    def get_maps(self, ha_id: str) -> list[dict]:
+        """GET /homeappliances/{haId}/map/maps — all maps of the cleaning robot."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/map/maps")
+        return resp.json().get("data", {}).get("maps", [])
+
+    def get_map(self, ha_id: str, map_id: str) -> dict | None:
+        """GET /homeappliances/{haId}/map/maps/{mapId} — basic data of a map."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/map/maps/{map_id}")
+        return resp.json().get("data")
+
+    def get_map_occupancy_grid(self, ha_id: str, map_id: str):
+        """GET .../map/maps/{mapId}/occupancyGrid — grid-based raw layout."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/occupancyGrid"
+        )
+        return resp.json().get("data")
+
+    def get_map_layout(self, ha_id: str, map_id: str):
+        """GET .../map/maps/{mapId}/layout — vector layout (walls and doors)."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/layout"
+        )
+        return resp.json().get("data")
+
+    def get_map_cleaning_status(self, ha_id: str, map_id: str):
+        """GET .../map/maps/{mapId}/cleaningStatus — cleaning status of a map."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus"
+        )
+        return resp.json().get("data")
+
+    def get_map_detected_objects(self, ha_id: str, map_id: str) -> list[dict]:
+        """GET .../map/maps/{mapId}/cleaningStatus/objects — detected objects."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus/objects"
+        )
+        return resp.json().get("data", {}).get("objects", [])
+
+    def get_map_detected_object(self, ha_id: str, map_id: str, object_id: str):
+        """GET .../map/maps/{mapId}/cleaningStatus/objects/{objectId}."""
+        resp = self._request(
+            "GET",
+            f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus/objects/{object_id}",
+        )
+        return resp.json().get("data")
+
+    def get_map_rooms(self, ha_id: str, map_id: str) -> list[dict]:
+        """GET .../map/maps/{mapId}/rooms — rooms defined on the map."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/rooms"
+        )
+        return resp.json().get("data", {}).get("rooms", [])
+
+    def get_map_room(self, ha_id: str, map_id: str, room_id: str):
+        """GET .../map/maps/{mapId}/rooms/{roomId} — a specific room."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/rooms/{room_id}"
+        )
+        return resp.json().get("data")
+
+    def get_map_zones(self, ha_id: str, map_id: str) -> list[dict]:
+        """GET .../map/maps/{mapId}/zones — zones defined on the map."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/zones"
+        )
+        return resp.json().get("data", {}).get("zones", [])
+
+    def get_map_zone(self, ha_id: str, map_id: str, zone_id: str):
+        """GET .../map/maps/{mapId}/zones/{zoneId} — a specific zone."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/zones/{zone_id}"
+        )
+        return resp.json().get("data")
+
+    def get_robot_position(self, ha_id: str):
+        """GET /homeappliances/{haId}/map/robot/position — current robot position."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/map/robot/position")
+        return resp.json().get("data")
+
+    def get_map_config_restrictions(self, ha_id: str):
+        """GET /homeappliances/{haId}/map/config/restrictions — map config restrictions."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/map/config/restrictions")
+        return resp.json().get("data")
+
+    def get_cleaning_summaries(self, ha_id: str) -> list[dict]:
+        """GET /homeappliances/{haId}/map/cleaningSummary — all cleaning summaries."""
+        resp = self._request("GET", f"/homeappliances/{ha_id}/map/cleaningSummary")
+        return resp.json().get("data", {}).get("cleaningSummaries", [])
+
+    def get_cleaning_summary(self, ha_id: str, counter: str):
+        """GET /homeappliances/{haId}/map/cleaningSummary/{counter}."""
+        resp = self._request(
+            "GET", f"/homeappliances/{ha_id}/map/cleaningSummary/{counter}"
+        )
+        return resp.json().get("data")

@@ -161,6 +161,59 @@ def cmd_chat(args: argparse.Namespace) -> None:
     print(reply)
 
 
+def cmd_settings(args: argparse.Namespace) -> None:
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    for item in client.get_settings(ha_id):
+        value = item.get("value")
+        display = item.get("displayvalue")
+        if display:
+            value = f"{value} ({display})"
+        print(f"  {item.get('key')}: {value}")
+
+
+def cmd_maps(args: argparse.Namespace) -> None:
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    for m in client.get_maps(ha_id):
+        print(f"- mapId={m.get('mapId')}  saved={m.get('isSaved')}  name={m.get('name', '')}")
+
+
+def cmd_mapinfo(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    getters = {
+        "occupancyGrid": client.get_map_occupancy_grid,
+        "layout": client.get_map_layout,
+        "cleaningStatus": client.get_map_cleaning_status,
+        "objects": client.get_map_detected_objects,
+        "rooms": client.get_map_rooms,
+        "zones": client.get_map_zones,
+    }
+    data = client.get_map(ha_id, args.map_id)
+    if args.field != "all":
+        data = getters[args.field](ha_id, args.map_id)
+    print(json.dumps(data, indent=2, default=str))
+
+
+def cmd_robot(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    print(json.dumps(client.get_robot_position(ha_id), indent=2, default=str))
+
+
+def cmd_summaries(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    print(json.dumps(client.get_cleaning_summaries(ha_id), indent=2, default=str))
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -182,6 +235,18 @@ def main() -> None:
     sub.add_parser("stop", help="Stop the active program")
     chat_parser = sub.add_parser("chat", help="Control the device in natural language (AI layer)")
     chat_parser.add_argument("message", help="What do you want, e.g. 'start cleaning'")
+    sub.add_parser("settings", help="List device settings (CleaningRobot-Settings)")
+    sub.add_parser("maps", help="List robot maps (CleaningRobot-Map)")
+    mapinfo_parser = sub.add_parser("mapinfo", help="Show map data as JSON (CleaningRobot-Map)")
+    mapinfo_parser.add_argument("--map-id", required=True, help="Map id (see 'maps')")
+    mapinfo_parser.add_argument(
+        "--field",
+        default="all",
+        choices=["all", "occupancyGrid", "layout", "cleaningStatus", "objects", "rooms", "zones"],
+        help="Which map data to show (default: all basic info)",
+    )
+    sub.add_parser("robot", help="Show robot position (CleaningRobot-Map)")
+    sub.add_parser("summaries", help="Show cleaning summaries (CleaningRobot-Map)")
 
     args = parser.parse_args()
     handler = {
@@ -192,6 +257,11 @@ def main() -> None:
         "start": cmd_start,
         "stop": cmd_stop,
         "chat": cmd_chat,
+        "settings": cmd_settings,
+        "maps": cmd_maps,
+        "mapinfo": cmd_mapinfo,
+        "robot": cmd_robot,
+        "summaries": cmd_summaries,
     }[args.command]
     handler(args)
 
