@@ -13,18 +13,18 @@ import re
 
 from .llm import LLMClient
 from . import smart_empty
-from ..home_connect.client import HomeConnectClient
+from ..home_connect.client import ROBOT_CLEAN_ALL_PROGRAM, HomeConnectClient
 
 SYSTEM_PROMPT = """You are the AI assistant for a Bosch Spotless BCRD2W robot vacuum.
 
 You receive the device status and a user request. Decide the ACTION to take and reply
 with ONLY a JSON object:
 
-{"action": "start" | "stop" | "status" | "empty" | "answer", "cleaning_type": "Auto", "reply": "what you tell the user"}
+{"action": "start" | "stop" | "status" | "empty" | "answer", "reply": "what you tell the user"}
 
 Rules:
-- action "start": user asked to start/begin/run cleaning. cleaning_type is one of
-  Auto, CleanSpot, CleanTurbo, CleanRoom, CleanZone (default Auto).
+- action "start": user asked to start/begin/run cleaning. NOTE: this device only
+  supports full cleaning (CleanAll) - there are no spot/room/zone types.
 - action "stop": user asked to stop/pause/end cleaning.
 - action "status": user asked about the device state.
 - action "empty": user asked about the dust box / emptying / whether the robot cleaned
@@ -85,10 +85,11 @@ class VacuumAgent:
         action = decision.get("action")
         reply = decision.get("reply") or ""
         if action == "start":
-            clean_type = decision.get("cleaning_type", "Auto")
-            options = [{"key": "RobotCleaner.Option.CleanType", "value": clean_type}]
-            self.client.start_program(ha_id, "BSH.Common.Root.SelectedProgram", options)
-            return reply or f"Started cleaning ({clean_type})."
+            # The BCRD2W only supports the CleanAll program with no options (see
+            # ROBOT_CLEAN_ALL_PROGRAM in home_connect/client.py) - spot/room/zone
+            # cleaning types are not available on this device.
+            self.client.start_program(ha_id, ROBOT_CLEAN_ALL_PROGRAM)
+            return reply or "Started cleaning."
         if action == "stop":
             self.client.stop_program(ha_id)
             return reply or "Stopped cleaning."

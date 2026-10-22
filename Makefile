@@ -1,0 +1,55 @@
+# Convenience targets for controlling the Bosch Spotless BCRD2W from the terminal
+# (no opencode needed). Run from the repo root, or use
+#   make -C ~/Code/dust-to-data-hackathon-26 start
+#
+# Examples:
+#   make start                              # start cleaning (CleanAll)
+#   make stop                               # stop cleaning
+#   make status                             # live status
+#   make chat MESSAGE="start cleaning"      # AI layer (natural language)
+
+PYTHON ?= python3
+CLI := $(PYTHON) -m src.cli
+
+.DEFAULT_GOAL := help
+
+.PHONY: help login appliances status programs start stop chat settings maps robot summaries smart-empty
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F'[:#]' '{printf "  %-14s %s\n", $$1, $$3}'
+
+login: ## One-time OAuth login (stores token in .token.json)
+	$(CLI) login
+
+appliances: ## List paired appliances
+	$(CLI) appliances
+
+status: ## Live device status
+	$(CLI) status
+
+programs: ## List available programs
+	$(CLI) programs
+
+start: ## Start cleaning (CleanAll)
+	$(CLI) start
+
+stop: ## Stop the active program
+	$(CLI) stop
+
+chat: ## AI layer, natural language: make chat MESSAGE="start cleaning"
+	$(CLI) chat "$(MESSAGE)"
+
+settings: ## List device settings
+	$(CLI) settings
+
+maps: ## List robot maps
+	$(CLI) maps
+
+robot: ## Show robot position
+	$(CLI) robot
+
+summaries: ## Show cleaning summaries
+	$(CLI) summaries
+
+smart-empty: ## Smart Emptying verdict for the current session
+	$(CLI) smart-empty

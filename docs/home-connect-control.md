@@ -21,7 +21,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `appliances` | `GET /homeappliances` | List paired appliances (`haId`) |
 | `status` | `GET /homeappliances/{haId}/status` | Show live status values |
 | `programs` | `GET /homeappliances/{haId}/programs/available` | List available programs |
-| `start [--type X]` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanType`) |
+| `start` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanAll` program) |
 | `stop` | `DELETE /homeappliances/{haId}/programs/active` | Stop the active program |
 | `settings` | `GET /homeappliances/{haId}/settings` | List device settings (`Settings`) |
 | `maps` | `GET /homeappliances/{haId}/map/maps` | List robot maps (`Map`) |
@@ -48,8 +48,11 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 
 ## AI layer (natural-language control)
 
-The `chat` command wires the **Bosch on-prem model** (the same one opencode uses) into
-the device control via `src/ai/`:
+The `chat` command wires an LLM into the device control via `src/ai/`. Two providers are
+supported (selected with `AI_MODEL_PROVIDER` in `.env`):
+
+- `openai` (default) — the **Bosch on-prem model** (OpenAI-compatible, same one opencode uses).
+- `anthropic` — **Claude** via `ANTHROPIC_API_KEY` (`AI_CLAUDE_BASE_URL`, `AI_CLAUDE_MODEL`).
 
 ```bash
 python -m src.cli chat "start cleaning"
@@ -72,19 +75,42 @@ python -m src.cli chat "should I empty the dust box?"  # same policy through the
 The API currently exposes no direct empty trigger, so this is a decision/reporting
 layer (see `docs/ai-features.md`).
 
-- `src/ai/llm.py` — OpenAI-compatible chat client (the Bosch on-prem endpoint is vLLM).
+- `src/ai/llm.py` — chat client for the OpenAI-compatible Bosch endpoint or the Anthropic
+  API (Claude). Provider chosen via `AI_MODEL_PROVIDER` (default `openai`).
 - `src/ai/agent.py` — `VacuumAgent`: puts the current device status in the prompt, asks
   the model for a structured JSON decision, then executes start/stop via the same
   `HomeConnectClient` the CLI uses.
-- Configure the model with `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` in `.env` (defaults
-  point to the Bosch on-prem endpoint configured in opencode).
+- Configure the model with `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (Bosch) or
+  `ANTHROPIC_API_KEY`, `AI_CLAUDE_MODEL` (Claude) in `.env` (never commit `.env`).
 - The model is a reasoning model — leave enough `max_tokens` or the reply may be empty.
+
+## Fast start from the terminal (no opencode)
+
+The `Makefile` in the repo root wraps the common commands, so you can run them directly:
+
+```bash
+make login                          # one-time auth
+make start                          # start cleaning (CleanAll)
+make stop                           # stop cleaning
+make status                         # live status
+make chat MESSAGE="start cleaning"  # AI layer (natural language)
+```
+
+Optional shortcut for your shell config (`~/.zshrc`):
+
+```bash
+alias vacuum='make -C ~/Code/dust-to-data-hackathon-26'
+```
+
+Then `vacuum start`, `vacuum stop`, `vacuum status`, ...
 
 ## Safety notes
 
 - ALWAYS confirm program keys/options from `programs` before sending `start` to a
   physical device (never leave the vacuum in a bad state).
-- The default `start` sends `BSH.Common.Root.SelectedProgram` with
-  `RobotCleaner.Option.CleanType=Auto`. Other types: `CleanSpot`, `CleanTurbo`,
-  `CleanRoom`, `CleanZone`.
+- The real BCRD2W only supports the `CleanAll` program
+  (`ConsumerProducts.CleaningRobot.Program.Cleaning.CleanAll`) with **no options**.
+  `BSH.Common.Root.SelectedProgram` is rejected with `409 SDK.Error.UnsupportedProgram`,
+  and there are no `CleanType` values (Auto/CleanSpot/...) on this device. This is
+  captured in `ROBOT_CLEAN_ALL_PROGRAM` in `src/home_connect/client.py`.
 - Prefer the Home Connect SIMULATOR appliance for development.

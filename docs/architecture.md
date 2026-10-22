@@ -66,7 +66,7 @@ sequenceDiagram
     Note over L,D: 3. Control the device
     L->>HC: GET /homeappliances/{haId}/programs/available
     HC-->>L: available programs + options
-    L->>HC: PUT /homeappliances/{haId}/programs/active (CleanType=Auto)
+    L->>HC: PUT /homeappliances/{haId}/programs/active (CleanAll program)
     HC--)D: relay start command
     D-->>HC: acknowledged / running
     HC-->>L: 204
@@ -116,8 +116,9 @@ sequenceDiagram
   `GET .../programs/available` — never guess.
 - Prefer testing against the Home Connect SIMULATOR first, then switch to the real
   device once payloads are verified.
-- `stop` idempotent and safe; `start` changes the physical device state — double-check
-  type (`Auto`, `CleanSpot`, ...) before sending.
+- `stop` idempotent and safe; `start` changes the physical device state — on the BCRD2W
+  the only valid payload is the `CleanAll` program (no options); anything else
+  (`BSH.Common.Root.SelectedProgram`, CleanType) is rejected with 409.
 
 ## Where the AI layer connects in (future work)
 

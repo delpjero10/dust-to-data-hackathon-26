@@ -20,6 +20,11 @@ log = logging.getLogger(__name__)
 API_BASE = "https://api.home-connect.com/api"
 MEDIA_TYPE = "application/vnd.bsh.sdk.v1+json"
 
+# The BCRD2W only exposes this program (no CleanType options) — confirmed against the
+# real device via GET .../programs/available. `BSH.Common.Root.SelectedProgram` is
+# REJECTED with 409 SDK.Error.UnsupportedProgram, so always start with this key.
+ROBOT_CLEAN_ALL_PROGRAM = "ConsumerProducts.CleaningRobot.Program.Cleaning.CleanAll"
+
 
 class HomeConnectError(Exception):
     """Raised when the Home Connect API returns an error."""
@@ -112,9 +117,9 @@ class HomeConnectClient:
     ) -> None:
         """PUT /homeappliances/{haId}/programs/active — start the given program.
 
-        For a cleaning robot, `key` is usually `BSH.Common.Root.SelectedProgram`
-        with an option `RobotCleaner.Option.CleanType` (e.g. value `Auto`).
-        Confirm valid keys/options from `/programs/available` before sending.
+        On the BCRD2W, `key` must be `ROBOT_CLEAN_ALL_PROGRAM` (the device rejects
+        `BSH.Common.Root.SelectedProgram` and accepts no options). Confirm valid keys
+        from `/programs/available` before sending.
         """
         body: dict = {"data": {"key": key}}
         if options:

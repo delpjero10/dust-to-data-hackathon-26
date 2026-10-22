@@ -4,8 +4,7 @@ Examples:
     python -m src.cli login
     python -m src.cli appliances
     python -m src.cli status
-    python -m src.cli start            # default: Auto cleaning
-    python -m src.cli start --type CleanSpot
+    python -m src.cli start            # start cleaning (BSH: CleanAll program)
     python -m src.cli stop
 """
 
@@ -24,7 +23,7 @@ from .home_connect.auth import (
     exchange_code,
     extract_code_from_url,
 )
-from .home_connect.client import HomeConnectClient
+from .home_connect.client import ROBOT_CLEAN_ALL_PROGRAM, HomeConnectClient
 from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
 from .ai import smart_empty
@@ -138,9 +137,10 @@ def cmd_programs(args: argparse.Namespace) -> None:
 def cmd_start(args: argparse.Namespace) -> None:
     client = build_client()
     ha_id = resolve_ha_id(client, args)
-    options = [{"key": "RobotCleaner.Option.CleanType", "value": args.type}]
-    client.start_program(ha_id, "BSH.Common.Root.SelectedProgram", options)
-    print(f"Started cleaning (CleanType={args.type}) on {ha_id}.")
+    # The BCRD2W accepts only ROBOT_CLEAN_ALL_PROGRAM and no options (verified via
+    # /programs/available). BSH.Common.Root.SelectedProgram is rejected with 409.
+    client.start_program(ha_id, ROBOT_CLEAN_ALL_PROGRAM)
+    print(f"Started cleaning on {ha_id}.")
 
 
 def cmd_stop(args: argparse.Namespace) -> None:
@@ -238,12 +238,7 @@ def main() -> None:
     sub.add_parser("appliances", help="List paired home appliances")
     sub.add_parser("status", help="Show live device status")
     sub.add_parser("programs", help="List available programs")
-    start_parser = sub.add_parser("start", help="Start cleaning")
-    start_parser.add_argument(
-        "--type",
-        default="Auto",
-        help="Cleaning type (Auto, CleanSpot, CleanTurbo, CleanRoom, CleanZone...)",
-    )
+    sub.add_parser("start", help="Start cleaning (BSH: CleanAll program)")
     sub.add_parser("stop", help="Stop the active program")
     chat_parser = sub.add_parser("chat", help="Control the device in natural language (AI layer)")
     chat_parser.add_argument("message", help="What do you want, e.g. 'start cleaning'")

@@ -53,11 +53,35 @@ A CLI lives in `src/cli.py` (Home Connect OAuth2 + API client):
 ```bash
 python -m src.cli login      # one-time auth, stores token in .token.json
 python -m src.cli appliances # list your paired appliances
-python -m src.cli start      # start cleaning (Auto)
+python -m src.cli start      # start cleaning (CleanAll)
 python -m src.cli stop       # stop the active cleaning program
 python -m src.cli status     # live status
 python -m src.cli chat "start cleaning"   # AI layer: natural-language control
 ```
+
+> **Note for the real BCRD2W:** the device only supports the `CleanAll` program and no
+> options. `BSH.Common.Root.SelectedProgram` is rejected with a `409
+> SDK.Error.UnsupportedProgram` — always start with the `CleanAll` key (see
+> `ROBOT_CLEAN_ALL_PROGRAM` in `src/home_connect/client.py`).
+
+### Quick launch from the terminal (no opencode)
+
+Use the `Makefile` shortcuts from the repo root:
+
+```bash
+make start        # start cleaning (CleanAll)
+make stop         # stop cleaning
+make status       # live status
+make chat MESSAGE="start cleaning"   # AI layer
+```
+
+Optional: put this in your shell config (`~/.zshrc`) so `vacuum ...` works from anywhere:
+
+```bash
+alias vacuum='make -C ~/Code/dust-to-data-hackathon-26'
+```
+
+Then just run `vacuum start`, `vacuum stop`, `vacuum status`, etc.
 
 The `chat` command uses the **Bosch on-prem model** (the same one opencode uses) through
 `src/ai/` to turn natural language into device actions. See
