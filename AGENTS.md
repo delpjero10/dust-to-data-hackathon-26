@@ -32,6 +32,8 @@ sandbox: experiment with device communication, then build the AI layer on top.
   - **Events** — server-sent events (SSE) pushed from the API for state changes.
   - **Commands** — one-shot actions in the `commands`/`interactions` block.
   - Robot vacuum specifics may include map-related settings (e.g. clear/save/activate map).
+- **We work against a REAL BCRD2W device in the office** — commands are executed by the
+  physical vacuum. See `docs/architecture.md` for the communication flow and safety rules.
 - Prefer test-first, simulator-first development. Only exercise real-device calls when
   verified against the API docs so you do not leave the device in a bad state (e.g. always
   confirm program/settings payloads before sending them).

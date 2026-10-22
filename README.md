@@ -28,16 +28,37 @@ This repo is a sandbox for the **Bosch Hackathon Belgrade 2026**:
 
 ## Getting started
 
+- Install deps: `pip install -r requirements.txt`
 - Start with read-only calls (status, programs, settings) against the simulator.
 - Always confirm program/settings payloads against the API docs before sending
   them to a physical device.
 - See `AGENTS.md` for working agreements and architecture notes, and `docs/`
-  (when populated) for endpoint references.
+  for endpoint references.
+
+## Architecture
+
+See `docs/architecture.md` for diagrams of how the laptop talks to the **real BCRD2W
+in the office** through the Home Connect cloud (OAuth2, status, start/stop, events).
+
+## Controlling the device from the laptop
+
+A CLI lives in `src/cli.py` (Home Connect OAuth2 + API client):
+
+```bash
+python -m src.cli login      # one-time auth, stores token in .token.json
+python -m src.cli appliances # list your paired appliances
+python -m src.cli start      # start cleaning (Auto)
+python -m src.cli stop       # stop the active cleaning program
+python -m src.cli status     # live status
+```
+
+See `docs/home-connect-control.md` for details.
 
 ## Repo structure
 
 ```
-src/        application logic (when it lands)
-docs/       API/endpoint notes for the hackathon team (when populated)
-.env        local secrets — gitignored, do not commit
+src/                application logic (Home Connect client + CLI)
+docs/               API/endpoint notes for the hackathon team
+.env                local secrets — gitignored, do not commit
+.token.json         local OAuth token — gitignored, do not commit
 ```

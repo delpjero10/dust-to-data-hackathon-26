@@ -157,6 +157,9 @@ env/
 venv/
 ENV/
 env.bak/
+
+# Local OAuth token
+.token.json
 venv.bak/
 
 # Spyder project settings
