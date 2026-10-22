@@ -3,7 +3,7 @@
 ## Project overview
 
 This repository is a test environment for the **Bosch Spotless BCRD2W "Spotless Advanced"**
-robotic vacuum cleaner and its **Home Connect API**.
+robotic vacuum cleaner and its **Home Connect API**..
 
 - Home Connect Developer API: https://apiclient.home-connect.com/#/map
 - Event target: **Bosch Hackathon Belgrade 2026**
