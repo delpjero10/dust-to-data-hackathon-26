@@ -5,7 +5,8 @@
 - [ ] Dodati AI layer (mapping, automatizacija, NLP kontrola) — **IN PROGRESS**
 - [ ] Home Connect portal — pisanje supportu — **IN PROGRESS**
 - [ ] Ispitivanje arhitekture — kako dodati AI layer u komunikaciju — **IN PROGRESS**
-- [ ] Definisanje golova i ciljeva naseg tima — **IN PROGRESS**
+- [x] Definisanje golova i ciljeva naseg tima — **DONE**
+- [ ] Ispitati kako se pristupa podacima sa kojima usisivac radi (map data, status, eventi) — **IN PROGRESS**
 
 ## Status legend
 - `[ ]` — pending
