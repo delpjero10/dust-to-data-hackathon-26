@@ -28,6 +28,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `mapinfo --map-id M [--field F]` | `GET .../map/maps/{M}[/...]` | Map data JSON: occupancyGrid, layout, cleaningStatus, objects, rooms, zones (`Map`) |
 | `robot` | `GET /homeappliances/{haId}/map/robot/position` | Robot position (`Map`) |
 | `summaries` | `GET /homeappliances/{haId}/map/cleaningSummary` | Cleaning summaries (`Map`) |
+| `smart-empty` | `GET /homeappliances/{haId}/programs/active` | Smart Emptying: is emptying the dust box justified for the current session? (`AI layer`) |
 
 ## Setup
 
@@ -55,6 +56,21 @@ python -m src.cli chat "start cleaning"
 python -m src.cli chat "stop cleaning"
 python -m src.cli chat "what is the battery level?"
 ```
+
+### Smart Emptying (`chat "..."` action `empty`, or `smart-empty`)
+
+Observed bug: the station empties the dust box on every return to base, even when the
+robot barely cleaned. The AI layer applies a policy — an empty is only considered
+justified when the robot cleaned for at least **2 minutes**
+(`AI_MIN_CLEAN_SECONDS`, default `120`):
+
+```bash
+python -m src.cli smart-empty                          # verdict for current session
+python -m src.cli chat "should I empty the dust box?"  # same policy through the model
+```
+
+The API currently exposes no direct empty trigger, so this is a decision/reporting
+layer (see `docs/ai-features.md`).
 
 - `src/ai/llm.py` — OpenAI-compatible chat client (the Bosch on-prem endpoint is vLLM).
 - `src/ai/agent.py` — `VacuumAgent`: puts the current device status in the prompt, asks

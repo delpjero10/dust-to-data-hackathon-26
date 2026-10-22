@@ -12,6 +12,7 @@ import json
 import re
 
 from .llm import LLMClient
+from . import smart_empty
 from ..home_connect.client import HomeConnectClient
 
 SYSTEM_PROMPT = """You are the AI assistant for a Bosch Spotless BCRD2W robot vacuum.
@@ -19,13 +20,15 @@ SYSTEM_PROMPT = """You are the AI assistant for a Bosch Spotless BCRD2W robot va
 You receive the device status and a user request. Decide the ACTION to take and reply
 with ONLY a JSON object:
 
-{"action": "start" | "stop" | "status" | "answer", "cleaning_type": "Auto", "reply": "what you tell the user"}
+{"action": "start" | "stop" | "status" | "empty" | "answer", "cleaning_type": "Auto", "reply": "what you tell the user"}
 
 Rules:
 - action "start": user asked to start/begin/run cleaning. cleaning_type is one of
   Auto, CleanSpot, CleanTurbo, CleanRoom, CleanZone (default Auto).
 - action "stop": user asked to stop/pause/end cleaning.
 - action "status": user asked about the device state.
+- action "empty": user asked about the dust box / emptying / whether the robot cleaned
+  enough to justify emptying. The agent will apply the Smart Emptying policy for you.
 - action "answer": any other question — answer using only the provided status.
 - reply must be a short, friendly message to the user.
 Output ONLY the JSON. Do not add explanations."""
@@ -52,6 +55,15 @@ class VacuumAgent:
                 value = f"{value} ({display})"
             parts.append(f"{item.get('key')}={value}")
         return "; ".join(parts) or "(empty)"
+
+    def smart_empty_report(self, ha_id: str) -> str:
+        """Apply the Smart Emptying policy and return a human-readable verdict.
+
+        Tells the user whether emptying the dust box is justified based on how long the
+        robot actually cleaned (default threshold 2 minutes).
+        """
+        seconds = smart_empty.get_cleaning_duration(self.client, ha_id)
+        return smart_empty.empty_verdict(seconds)["reason"]
 
     def run(self, ha_id: str, user_message: str) -> str:
         """Process one natural-language request and return the assistant's reply."""
@@ -82,6 +94,9 @@ class VacuumAgent:
             return reply or "Stopped cleaning."
         if action == "status":
             return reply or f"Device status:\n{status}"
+        if action == "empty":
+            verdict = self.smart_empty_report(ha_id)
+            return f"{reply}\n{verdict}".strip() if reply else verdict
         return reply or f"Current device status:\n{status}"
 
     @staticmethod

@@ -11,6 +11,9 @@
 - [ ] Contact service technicians — **IN PROGRESS**
 - [ ] Test the device in reality room by room and record its weaknesses — **IN PROGRESS**
 - [ ] Investigate the best on-prem AI model among those offered for our system — **IN PROGRESS**
+- [x] Smart Emptying: don't empty the dust box on every return to base — only when the
+      robot actually cleaned (default > 2 min). See `docs/ai-features.md` — **IMPLEMENTED**
+      (`src/ai/smart_empty.py`, `python -m src.cli smart-empty`, agent `empty` action)
 
 ## Status legend
 - `[ ]` — pending

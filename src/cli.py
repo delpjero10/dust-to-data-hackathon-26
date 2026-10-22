@@ -27,6 +27,7 @@ from .home_connect.auth import (
 from .home_connect.client import HomeConnectClient
 from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
+from .ai import smart_empty
 
 
 def get_credentials() -> tuple[str, str]:
@@ -214,6 +215,17 @@ def cmd_summaries(args: argparse.Namespace) -> None:
     print(json.dumps(client.get_cleaning_summaries(ha_id), indent=2, default=str))
 
 
+def cmd_smart_empty(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    seconds = smart_empty.get_cleaning_duration(client, ha_id)
+    verdict = smart_empty.empty_verdict(seconds)
+    print(verdict.pop("reason"))
+    print(json.dumps(verdict, indent=2, default=str))
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -247,6 +259,10 @@ def main() -> None:
     )
     sub.add_parser("robot", help="Show robot position (CleaningRobot-Map)")
     sub.add_parser("summaries", help="Show cleaning summaries (CleaningRobot-Map)")
+    sub.add_parser(
+        "smart-empty",
+        help="Smart Emptying: is emptying the dust box justified for the current session? (AI layer)",
+    )
 
     args = parser.parse_args()
     handler = {
@@ -262,6 +278,7 @@ def main() -> None:
         "mapinfo": cmd_mapinfo,
         "robot": cmd_robot,
         "summaries": cmd_summaries,
+        "smart-empty": cmd_smart_empty,
     }[args.command]
     handler(args)
 
