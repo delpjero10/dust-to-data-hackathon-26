@@ -226,6 +226,39 @@ def cmd_smart_empty(args: argparse.Namespace) -> None:
     print(json.dumps(verdict, indent=2, default=str))
 
 
+def cmd_watch(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    interval = getattr(args, "interval", 5)
+    timeout = getattr(args, "timeout", None)
+
+    def emit(event: smart_empty.EmptyEvent) -> None:
+        print("\n" + event.reason)
+        print(
+            json.dumps(
+                {
+                    "cleaning_seconds": round(event.cleaning_seconds, 1),
+                    "empty_justified": event.empty_justified,
+                    "min_clean_seconds": event.min_clean_seconds,
+                },
+                indent=2,
+            )
+        )
+
+    try:
+        smart_empty.watch(
+            client,
+            ha_id,
+            interval=interval,
+            timeout=timeout,
+            on_event=emit,
+        )
+    except KeyboardInterrupt:
+        print("\nStopped watching.")
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -258,6 +291,19 @@ def main() -> None:
         "smart-empty",
         help="Smart Emptying: is emptying the dust box justified for the current session? (AI layer)",
     )
+    watch_parser = sub.add_parser(
+        "watch",
+        help="Smart Emptying (live): detect a false empty the moment the robot docks (AI layer)",
+    )
+    watch_parser.add_argument(
+        "--interval", type=float, default=5.0, help="Polling interval in seconds (default 5)"
+    )
+    watch_parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Stop watching after N seconds if the robot never docks",
+    )
 
     args = parser.parse_args()
     handler = {
@@ -274,6 +320,7 @@ def main() -> None:
         "robot": cmd_robot,
         "summaries": cmd_summaries,
         "smart-empty": cmd_smart_empty,
+        "watch": cmd_watch,
     }[args.command]
     handler(args)
 

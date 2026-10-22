@@ -13,7 +13,7 @@ CLI := $(PYTHON) -m src.cli
 
 .DEFAULT_GOAL := help
 
-.PHONY: help login appliances status programs start stop chat settings maps robot summaries smart-empty
+.PHONY: help login appliances status programs start stop chat settings maps robot summaries smart-empty watch test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F'[:#]' '{printf "  %-14s %s\n", $$1, $$3}'
@@ -53,3 +53,9 @@ summaries: ## Show cleaning summaries
 
 smart-empty: ## Smart Emptying verdict for the current session
 	$(CLI) smart-empty
+
+watch: ## Smart Emptying (live): flag a false empty when the robot docks
+	$(CLI) watch
+
+test: ## Run unit tests (stdlib unittest)
+	$(PYTHON) -m unittest discover -s tests -v

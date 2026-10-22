@@ -1,4 +1,4 @@
-"""Smart dust-box emptying policy for the BCRD2W.
+"""Smart dust-box emptying for the BCRD2W.
 
 Observed bug (see docs/ai-features.md): the docking station empties the dust box on
 every return to base, even when the robot barely cleaned. The Home Connect API for
@@ -7,21 +7,32 @@ is no direct "empty" trigger — so this module implements the AI-layer decision
 
 * an empty is only justified when the cleaning session actually ran long enough
   (default threshold 2 minutes = 120 s, configurable via AI_MIN_CLEAN_SECONDS);
-* it flags "false empties" (robot emptied although cleaning was too short) and is
-  ready to gate a real empty command once/if the API exposes one.
+* `EmptyMonitor` is the real-time, demo-able part: it watches the status stream and,
+  whenever the robot returns to base (docks) after a cleaning session, flags whether
+  the dock-triggered empty was justified or a "false empty".
+* it is ready to gate a real empty command once/if the API exposes one.
 
-Policy uses `BSH.Common.Option.ElapsedProgramTime` reported by the active program.
+Timing: the API has no reliable wall clock on the robot, so `EmptyMonitor` measures
+the session with local wall-clock time (from OperationState=Run until the robot
+docks/charges). Good enough for the demo; `smart-empty` uses the device-reported
+`BSH.Common.Option.ElapsedProgramTime` when a program is active.
 """
 
 from __future__ import annotations
 
 import os
+import time
+from dataclasses import dataclass
 
 from ..config import load_env
 from ..home_connect.client import HomeConnectClient
 
 ELAPSED_OPTION_KEY = "BSH.Common.Option.ElapsedProgramTime"
 DEFAULT_MIN_CLEAN_SECONDS = 120
+
+OPERATION_READY = "BSH.Common.EnumType.OperationState.Ready"
+OPERATION_RUN = "BSH.Common.EnumType.OperationState.Run"
+CHARGING = "BSH.Common.EnumType.BatteryChargingState.Charging"
 
 
 def get_min_clean_seconds() -> int:
@@ -94,3 +105,132 @@ def _format_duration(seconds: int) -> str:
     if minutes:
         return f"{minutes} min {secs} s"
     return f"{secs} s"
+
+
+@dataclass
+class EmptyEvent:
+    """Result of detecting the robot docking after a cleaning session.
+
+    The docking station empties the dust box on every return to base, so this event
+    classifies that empty: justified (long cleaning) or a FALSE EMPTY (too short).
+    """
+
+    cleaning_seconds: float
+    empty_justified: bool
+    min_clean_seconds: int
+    reason: str
+
+
+class EmptyMonitor:
+    """State machine that flags dock-triggered "false empties" from a status stream.
+
+    Feed it one status snapshot at a time (list of `{"key": ..., "value": ...}`). It
+    remembers when a cleaning session starts (`OperationState` -> Run) and, when the
+    robot docks (`OperationState` Ready + charging), it emits an `EmptyEvent` with the
+    wall-clock cleaning duration. Pure/thread-safe: no I/O, easy to unit-test.
+    """
+
+    def __init__(self, min_seconds: int | None = None):
+        self.min_seconds = (
+            get_min_clean_seconds() if min_seconds is None else max(0, min_seconds)
+        )
+        self._session_started_at: float | None = None
+
+    @staticmethod
+    def _values(status_items: list[dict]) -> dict:
+        return {item.get("key"): item.get("value") for item in status_items}
+
+    @property
+    def session_active(self) -> bool:
+        return self._session_started_at is not None
+
+    def on_status(
+        self,
+        status_items: list[dict],
+        now: float | None = None,
+    ) -> EmptyEvent | None:
+        """Process one status snapshot; returns an EmptyEvent when the robot docks."""
+        now = time.time() if now is None else now
+        values = self._values(status_items)
+        operation = values.get("BSH.Common.Status.OperationState")
+        charging = values.get("BSH.Common.Status.BatteryChargingState")
+
+        if operation == OPERATION_RUN and self._session_started_at is None:
+            self._session_started_at = now
+            return None
+
+        if (
+            operation == OPERATION_READY
+            and charging == CHARGING
+            and self._session_started_at is not None
+        ):
+            cleaning_seconds = now - self._session_started_at
+            self._session_started_at = None
+            justified = cleaning_seconds >= self.min_seconds
+            if justified:
+                reason = (
+                    f"Robot docked after cleaning for {_format_duration(cleaning_seconds)} "
+                    "- emptying the dust box is justified."
+                )
+            else:
+                reason = (
+                    f"Robot docked after only {_format_duration(cleaning_seconds)} of "
+                    f"cleaning - FALSE EMPTY: the station emptied although that was "
+                    f"unnecessary (min {_format_duration(self.min_seconds)} required)."
+                )
+            return EmptyEvent(
+                cleaning_seconds=cleaning_seconds,
+                empty_justified=justified,
+                min_clean_seconds=self.min_seconds,
+                reason=reason,
+            )
+        return None
+
+
+def watch(
+    client: HomeConnectClient,
+    ha_id: str,
+    interval: float = 5.0,
+    timeout: float | None = None,
+    on_event=None,
+) -> EmptyEvent | None:
+    """Poll status and flag a false empty the moment the robot docks after cleaning.
+
+    Prints live updates; `on_event` (callable) is invoked with the EmptyEvent before
+    returning it (used by the CLI to also print structured JSON). Returns None on
+    timeout or if stopped before the robot ever docked.
+    """
+    monitor = EmptyMonitor()
+    print("Watching for a false empty: waiting for the robot to start cleaning...")
+    started_at = time.time()
+    while True:
+        if timeout is not None and time.time() - started_at > timeout:
+            print(
+                f"Timeout: the robot never docked within {_format_duration(timeout)}. "
+                "Nothing to report."
+            )
+            return None
+
+        try:
+            status_items = client.get_status(ha_id)
+        except Exception as exc:  # noqa: BLE001 - keep watching through API hiccups
+            print(f"(status fetch failed, retrying: {exc})")
+            time.sleep(interval)
+            continue
+
+        if monitor.session_active:
+            print(
+                f"Cleaning in progress... {_format_duration(time.time() - monitor._session_started_at)}"
+                f" (min {_format_duration(monitor.min_seconds)})"
+            )
+
+        event = monitor.on_status(status_items)
+        if event is not None:
+            if on_event:
+                on_event(event)
+            return event
+
+        if monitor.session_active is False:
+            print("Waiting for the robot to leave the dock / start cleaning...")
+
+        time.sleep(interval)

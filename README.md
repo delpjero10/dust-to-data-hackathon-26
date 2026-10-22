@@ -73,6 +73,9 @@ make start        # start cleaning (CleanAll)
 make stop         # stop cleaning
 make status       # live status
 make chat MESSAGE="start cleaning"   # AI layer
+make smart-empty  # AI layer: is emptying the dust box justified?
+make watch        # AI layer: live detection of false empties when the robot docks
+make test         # unit tests
 ```
 
 Optional: put this in your shell config (`~/.zshrc`) so `vacuum ...` works from anywhere:
