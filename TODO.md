@@ -10,6 +10,7 @@
 - [ ] Make the presentation — **IN PROGRESS**
 - [ ] Contact service technicians — **IN PROGRESS**
 - [ ] Test the device in reality room by room and record its weaknesses — **IN PROGRESS**
+- [ ] Investigate the best on-prem AI model among those offered for our system — **IN PROGRESS**
 
 ## Status legend
 - `[ ]` — pending
