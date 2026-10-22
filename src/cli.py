@@ -23,7 +23,11 @@ from .home_connect.auth import (
     exchange_code,
     extract_code_from_url,
 )
-from .home_connect.client import ROBOT_CLEAN_ALL_PROGRAM, HomeConnectClient
+from .home_connect.client import (
+    ROBOT_CLEAN_ALL_PROGRAM,
+    ROBOT_GO_HOME_PROGRAM,
+    HomeConnectClient,
+)
 from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
 from .ai import smart_empty
@@ -150,6 +154,13 @@ def cmd_stop(args: argparse.Namespace) -> None:
     print(f"Stopped the active program on {ha_id}.")
 
 
+def cmd_dock(args: argparse.Namespace) -> None:
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    client.start_program(ha_id, ROBOT_GO_HOME_PROGRAM)
+    print(f"Sending the robot back to base (GoHome) on {ha_id}.")
+
+
 def cmd_chat(args: argparse.Namespace) -> None:
     client = build_client()
     ha_id = resolve_ha_id(client, args)
@@ -273,6 +284,7 @@ def main() -> None:
     sub.add_parser("programs", help="List available programs")
     sub.add_parser("start", help="Start cleaning (BSH: CleanAll program)")
     sub.add_parser("stop", help="Stop the active program")
+    sub.add_parser("dock", help="Send the robot back to base (GoHome program)")
     chat_parser = sub.add_parser("chat", help="Control the device in natural language (AI layer)")
     chat_parser.add_argument("message", help="What do you want, e.g. 'start cleaning'")
     sub.add_parser("settings", help="List device settings (CleaningRobot-Settings)")
@@ -313,6 +325,7 @@ def main() -> None:
         "programs": cmd_programs,
         "start": cmd_start,
         "stop": cmd_stop,
+        "dock": cmd_dock,
         "chat": cmd_chat,
         "settings": cmd_settings,
         "maps": cmd_maps,

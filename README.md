@@ -71,6 +71,7 @@ Use the `Makefile` shortcuts from the repo root:
 ```bash
 make start        # start cleaning (CleanAll)
 make stop         # stop cleaning
+make dock         # send the robot back to base (GoHome)
 make status       # live status
 make chat MESSAGE="start cleaning"   # AI layer
 make smart-empty  # AI layer: is emptying the dust box justified?

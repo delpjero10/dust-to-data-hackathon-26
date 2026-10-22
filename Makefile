@@ -13,7 +13,7 @@ CLI := $(PYTHON) -m src.cli
 
 .DEFAULT_GOAL := help
 
-.PHONY: help login appliances status programs start stop chat settings maps robot summaries smart-empty watch test
+.PHONY: help login appliances status programs start stop dock chat settings maps robot summaries smart-empty watch test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F'[:#]' '{printf "  %-14s %s\n", $$1, $$3}'
@@ -35,6 +35,9 @@ start: ## Start cleaning (CleanAll)
 
 stop: ## Stop the active program
 	$(CLI) stop
+
+dock: ## Send the robot back to base (GoHome program)
+	$(CLI) dock
 
 chat: ## AI layer, natural language: make chat MESSAGE="start cleaning"
 	$(CLI) chat "$(MESSAGE)"

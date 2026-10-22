@@ -25,6 +25,11 @@ MEDIA_TYPE = "application/vnd.bsh.sdk.v1+json"
 # REJECTED with 409 SDK.Error.UnsupportedProgram, so always start with this key.
 ROBOT_CLEAN_ALL_PROGRAM = "ConsumerProducts.CleaningRobot.Program.Cleaning.CleanAll"
 
+# "Return to base" program. Only listed by /programs/available while the robot is off
+# the dock (after cleaning/stops). Starting it sends the robot back to charge — and is
+# exactly the moment the station runs the (often unjustified) dust-box empty.
+ROBOT_GO_HOME_PROGRAM = "ConsumerProducts.CleaningRobot.Program.Basic.GoHome"
+
 
 class HomeConnectError(Exception):
     """Raised when the Home Connect API returns an error."""

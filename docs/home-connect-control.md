@@ -23,6 +23,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `programs` | `GET /homeappliances/{haId}/programs/available` | List available programs |
 | `start` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanAll` program) |
 | `stop` | `DELETE /homeappliances/{haId}/programs/active` | Stop the active program |
+| `dock` | `PUT /homeappliances/{haId}/programs/active` | Send the robot back to base (`GoHome` program) |
 | `settings` | `GET /homeappliances/{haId}/settings` | List device settings (`Settings`) |
 | `maps` | `GET /homeappliances/{haId}/map/maps` | List robot maps (`Map`) |
 | `mapinfo --map-id M [--field F]` | `GET .../map/maps/{M}[/...]` | Map data JSON: occupancyGrid, layout, cleaningStatus, objects, rooms, zones (`Map`) |
@@ -93,6 +94,7 @@ The `Makefile` in the repo root wraps the common commands, so you can run them d
 make login                          # one-time auth
 make start                          # start cleaning (CleanAll)
 make stop                           # stop cleaning
+make dock                           # send robot back to base (GoHome)
 make status                         # live status
 make chat MESSAGE="start cleaning"  # AI layer (natural language)
 make smart-empty                    # AI layer: verdict for the current session
@@ -117,4 +119,7 @@ Then `vacuum start`, `vacuum stop`, `vacuum status`, ...
   `BSH.Common.Root.SelectedProgram` is rejected with `409 SDK.Error.UnsupportedProgram`,
   and there are no `CleanType` values (Auto/CleanSpot/...) on this device. This is
   captured in `ROBOT_CLEAN_ALL_PROGRAM` in `src/home_connect/client.py`.
+- To return the robot to base use the `GoHome` program
+  (`ConsumerProducts.CleaningRobot.Program.Basic.GoHome`, the `dock` command). It is
+  only listed by `/programs/available` while the robot is off the dock.
 - Prefer the Home Connect SIMULATOR appliance for development.
