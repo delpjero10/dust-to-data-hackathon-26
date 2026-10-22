@@ -1,50 +1,49 @@
 # GOALS — Dust to Data (Bosch Hackathon 2026)
 
-## Vizija
+## Vision
 
-Imamo **inovativno resenje** koje dodaje **AI u ceo sistem** — od mapiranja, preko
-automatizacije, do prirodno-jezicke kontrole uredjaja. Koristimo mane uredjaja kao
-prednost: vecina problema koje svakodnevni korisnici imaju sa robot usisivacem moze
-da se resi pametnim slojem iznad hardvera.
+We are building an **innovative solution** that adds **AI across the whole system** — from
+mapping, through automation, to natural-language control of the device. We turn the
+device's weaknesses into an advantage: most problems everyday users face with a robot
+vacuum can be solved with a smart layer on top of the hardware.
 
-## Glavni cilj
+## Main goal
 
-Pokazati da "los" uredjaj sa pravim AI slojem postaje mnogo bolji:
-- **Inovativnost** — AI nije dodatak, vec je ugradjen u svaki deo sistema (data → odluka → akcija).
-- **Funkcionalnost** — resavamo stvarne probleme: lose mapiranje, neoptimalno ciscenje,
-  neprakticna kontrola.
+Show that a "bad" device with the right AI layer becomes much better:
+- **Innovation** — AI is not an add-on, it is embedded in every part of the system (data → decision → action).
+- **Functionality** — we solve real problems: poor mapping, suboptimal cleaning, impractical control.
 
-## Specificni ciljevi
+## Specific goals
 
-### 1. AI za bolje mapiranje
-- Uredjaj **lose mapira** — analiziramo mape, podatke o sobama i napredak ciscenja.
-- Generisemo **bolju predstavu o prostoru** nego sto je raw mapa daje (npr. detekcija
-  soba, pravih prepreka, "mrtvih" zona koje su propustene).
+### 1. AI for better mapping
+- The device **maps poorly** — we analyze maps, room data, and cleaning progress.
+- We generate a **better picture of the space** than the raw map provides (e.g. room
+  detection, real obstacles, "dead" zones that were missed).
 
-### 2. AI automatizacija akcija
-- **Automatsko pokretanje/pauziranje/zaustavljanje** ciscenja na osnovu stanja, trigera
-  ili podataka (npr. raspored, zauzetost prostora, prethodne sesije).
-- **Pametno planiranje** — ne cistimo "najbolje po uredjaju", nego po onome sto
-  podaci kazu da je potrebno.
+### 2. AI action automation
+- **Automatic start/pause/stop of cleaning** based on state, triggers, or data (e.g.
+  schedule, room occupancy, past sessions).
+- **Smart planning** — we don't clean "however the device wants", but based on what the
+  data says is needed.
 
-### 3. Prirodno-jezicka kontrola i izvestaji
-- Korisnik razgovara sa uredjajem (chatbot / glas).
-- AI prevodi nameru u Home Connect komande i **objasnjava sta se desava** (izvestaji).
+### 3. Natural-language control and reporting
+- The user talks to the device (chatbot / voice).
+- AI translates intent into Home Connect commands and **explains what is happening** (reports).
 
-### 4. AI u komunikaciji (end-to-end)
-- AI layer **sve vreme u petlji**: citamo stanje/evente, tumacimo ih, donosimo odluke,
-  saljemo komande — sve kroz Home Connect API.
+### 4. AI in communication (end-to-end)
+- The AI layer is **always in the loop**: we read state/events, interpret them, make
+  decisions, send commands — all through the Home Connect API.
 
-## Kako merimo uspeh
+## How we measure success
 
-- Inovativno i demonstrabilno resenje pred ziri-jem (ne samo "radi", nego "pametno radi").
-- Vidljivo poboljsanje mapiranja / pokrivenosti u odnosu na stock podesavanja.
-- Automatizovane akcije koje rade bez ljudske intervencije.
-- Kontrola prirodnim jezikom koja je intuitivna za publiku.
-- Cista, ponovljiva arhitektura koju tim moze da objasni.
+- An innovative, demonstrable solution in front of the jury (not just "it works", but "it works smartly").
+- Visible improvement in mapping / coverage compared to stock settings.
+- Automated actions that run without human intervention.
+- Natural-language control that feels intuitive to the audience.
+- A clean, reproducible architecture the team can explain.
 
-## Principi
+## Principles
 
-- Simulator-first: bezbedno testiranje pre realnog uredjaja.
-- Belezenje i dokumentovanje svakog endpoint-a/interakcije za tim.
-- Fokus na konkretan demo do kraja hackathona.
+- Simulator-first: safe testing before touching the real device.
+- Log and document every endpoint/interaction for the team.
+- Focus on a concrete demo by the end of the hackathon.
