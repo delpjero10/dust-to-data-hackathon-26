@@ -31,6 +31,7 @@ from .home_connect.client import (
 from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
 from .ai import smart_empty
+from .ai import coverage as coverage_ai
 
 
 def get_credentials() -> tuple[str, str]:
@@ -270,6 +271,38 @@ def cmd_watch(args: argparse.Namespace) -> None:
         print("\nStopped watching.")
 
 
+def cmd_coverage(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    r = coverage_ai.analyze_device_map(
+        client,
+        ha_id,
+        map_id=getattr(args, "map_id", None),
+        collect_seconds=getattr(args, "collect", 0) or 0.0,
+        interval=getattr(args, "interval", 3.0),
+    )
+
+    print(f"Map {r['map_id']} ('{r['map_name']}')")
+    g = r["grid"]
+    print(
+        f"Grid {g['width']}x{g['height']} @ {g['resolution_cm']} cm/cell | "
+        f"free={g['free_cells']} unknown={g['unknown_cells']} obstacles={g['obstacle_cells']}"
+    )
+    print(
+        f"Cleaning path: {r['path_points']} points, {r['distance_m']} m travelled over a "
+        f"{r['path_span_m']} m span, {r['distinct_cells_visited']} distinct cells visited"
+    )
+    if r["coverage_percent"] is not None:
+        print(f"Coverage: ~{r['coverage_percent']}% of the area the robot was in")
+    else:
+        print("Coverage: not estimable (path too short)")
+    print("---")
+    print(r["fake_cleaning_reason"])
+    print(json.dumps(r, indent=2, default=str))
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -316,6 +349,23 @@ def main() -> None:
         default=None,
         help="Stop watching after N seconds if the robot never docks",
     )
+    coverage_parser = sub.add_parser(
+        "coverage",
+        help="Coverage analysis + fake-cleaning detection from the map (AI layer)",
+    )
+    coverage_parser.add_argument(
+        "--map-id", type=int, default=None, help="Map id (default: first map)"
+    )
+    coverage_parser.add_argument(
+        "--collect",
+        type=float,
+        default=0,
+        help="Collect the cleaning path live for N seconds first (run 'make start' in "
+        "another terminal)",
+    )
+    coverage_parser.add_argument(
+        "--interval", type=float, default=3.0, help="Sampling interval for --collect"
+    )
 
     args = parser.parse_args()
     handler = {
@@ -334,6 +384,7 @@ def main() -> None:
         "summaries": cmd_summaries,
         "smart-empty": cmd_smart_empty,
         "watch": cmd_watch,
+        "coverage": cmd_coverage,
     }[args.command]
     handler(args)
 

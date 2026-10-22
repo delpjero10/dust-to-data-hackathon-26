@@ -7,6 +7,7 @@ Use that file as the source of truth when extending this client.
 from __future__ import annotations
 
 import logging
+import time
 
 import requests
 
@@ -58,24 +59,30 @@ class HomeConnectClient:
         headers = kwargs.pop("headers", {})
         headers.setdefault("Accept", MEDIA_TYPE)
         headers.setdefault("Content-Type", MEDIA_TYPE)
-        resp = self._session.request(
-            method,
-            url,
-            headers={"Authorization": f"Bearer {self.token.access_token}", **headers},
-            timeout=30,
-            **kwargs,
-        )
-        if resp.status_code == 401:
-            self._try_refresh()
-            headers["Authorization"] = f"Bearer {self.token.access_token}"
+        attempt = 0
+        while True:
+            attempt += 1
+            auth_headers = {"Authorization": f"Bearer {self.token.access_token}", **headers}
             resp = self._session.request(
-                method, url, headers=headers, timeout=30, **kwargs
+                method, url, headers=auth_headers, timeout=30, **kwargs
             )
-        if resp.status_code >= 400:
-            raise HomeConnectError(
-                f"{method} {url} -> {resp.status_code}: {resp.text[:500]}"
-            )
-        return resp
+            if resp.status_code == 401:
+                self._try_refresh()
+                auth_headers["Authorization"] = f"Bearer {self.token.access_token}"
+                resp = self._session.request(
+                    method, url, headers=auth_headers, timeout=30, **kwargs
+                )
+            # The Home Connect subsystem occasionally returns transient 5xx on map
+            # endpoints — retry them briefly before giving up.
+            if resp.status_code >= 500 and attempt < 4:
+                log.info("Transient server error %s, retrying (%d/3)...", resp.status_code, attempt)
+                time.sleep(attempt)
+                continue
+            if resp.status_code >= 400:
+                raise HomeConnectError(
+                    f"{method} {url} -> {resp.status_code}: {resp.text[:500]}"
+                )
+            return resp
 
     def _try_refresh(self) -> None:
         if not self.token.refresh_token:
@@ -164,43 +171,58 @@ class HomeConnectClient:
         self._request("PUT", f"/homeappliances/{ha_id}/settings/{key}", json=body)
 
     # -- map (CleaningRobot-Map) ---------------------------------------------
+    @staticmethod
+    def _unwrap(body):
+        """Normalize responses: Home Connect usually wraps bodies in {"data": ...},
+        but the BCRD2W returns bare bodies for several map endpoints — handle both."""
+        if isinstance(body, dict) and "data" in body:
+            return body["data"]
+        return body
+
     def get_maps(self, ha_id: str) -> list[dict]:
-        """GET /homeappliances/{haId}/map/maps — all maps of the cleaning robot."""
+        """GET /homeappliances/{haId}/map/maps — all maps of the cleaning robot.
+
+        Note: this BCRD2W returns a bare JSON array (not wrapped in
+        {"data": {"maps": [...]}}), so we handle both shapes.
+        """
         resp = self._request("GET", f"/homeappliances/{ha_id}/map/maps")
-        return resp.json().get("data", {}).get("maps", [])
+        body = resp.json()
+        if isinstance(body, list):
+            return body
+        return self._unwrap(body).get("maps", [])
 
     def get_map(self, ha_id: str, map_id: str) -> dict | None:
         """GET /homeappliances/{haId}/map/maps/{mapId} — basic data of a map."""
         resp = self._request("GET", f"/homeappliances/{ha_id}/map/maps/{map_id}")
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_occupancy_grid(self, ha_id: str, map_id: str):
         """GET .../map/maps/{mapId}/occupancyGrid — grid-based raw layout."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/occupancyGrid"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_layout(self, ha_id: str, map_id: str):
         """GET .../map/maps/{mapId}/layout — vector layout (walls and doors)."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/layout"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_cleaning_status(self, ha_id: str, map_id: str):
         """GET .../map/maps/{mapId}/cleaningStatus — cleaning status of a map."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_detected_objects(self, ha_id: str, map_id: str) -> list[dict]:
         """GET .../map/maps/{mapId}/cleaningStatus/objects — detected objects."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus/objects"
         )
-        return resp.json().get("data", {}).get("objects", [])
+        return self._unwrap(resp.json()).get("objects", [])
 
     def get_map_detected_object(self, ha_id: str, map_id: str, object_id: str):
         """GET .../map/maps/{mapId}/cleaningStatus/objects/{objectId}."""
@@ -208,54 +230,54 @@ class HomeConnectClient:
             "GET",
             f"/homeappliances/{ha_id}/map/maps/{map_id}/cleaningStatus/objects/{object_id}",
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_rooms(self, ha_id: str, map_id: str) -> list[dict]:
         """GET .../map/maps/{mapId}/rooms — rooms defined on the map."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/rooms"
         )
-        return resp.json().get("data", {}).get("rooms", [])
+        return self._unwrap(resp.json()).get("rooms", [])
 
     def get_map_room(self, ha_id: str, map_id: str, room_id: str):
         """GET .../map/maps/{mapId}/rooms/{roomId} — a specific room."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/rooms/{room_id}"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_zones(self, ha_id: str, map_id: str) -> list[dict]:
         """GET .../map/maps/{mapId}/zones — zones defined on the map."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/zones"
         )
-        return resp.json().get("data", {}).get("zones", [])
+        return self._unwrap(resp.json()).get("zones", [])
 
     def get_map_zone(self, ha_id: str, map_id: str, zone_id: str):
         """GET .../map/maps/{mapId}/zones/{zoneId} — a specific zone."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/maps/{map_id}/zones/{zone_id}"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_robot_position(self, ha_id: str):
         """GET /homeappliances/{haId}/map/robot/position — current robot position."""
         resp = self._request("GET", f"/homeappliances/{ha_id}/map/robot/position")
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_map_config_restrictions(self, ha_id: str):
         """GET /homeappliances/{haId}/map/config/restrictions — map config restrictions."""
         resp = self._request("GET", f"/homeappliances/{ha_id}/map/config/restrictions")
-        return resp.json().get("data")
+        return self._unwrap(resp.json())
 
     def get_cleaning_summaries(self, ha_id: str) -> list[dict]:
         """GET /homeappliances/{haId}/map/cleaningSummary — all cleaning summaries."""
         resp = self._request("GET", f"/homeappliances/{ha_id}/map/cleaningSummary")
-        return resp.json().get("data", {}).get("cleaningSummaries", [])
+        return self._unwrap(resp.json()).get("cleaningSummaries", [])
 
     def get_cleaning_summary(self, ha_id: str, counter: str):
         """GET /homeappliances/{haId}/map/cleaningSummary/{counter}."""
         resp = self._request(
             "GET", f"/homeappliances/{ha_id}/map/cleaningSummary/{counter}"
         )
-        return resp.json().get("data")
+        return self._unwrap(resp.json())

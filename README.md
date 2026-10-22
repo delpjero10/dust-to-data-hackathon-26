@@ -46,6 +46,11 @@ This repo is a sandbox for the **Bosch Hackathon Belgrade 2026**:
 See `docs/architecture.md` for diagrams of how the laptop talks to the **real BCRD2W
 in the office** through the Home Connect cloud (OAuth2, status, start/stop, events).
 
+### Demo
+
+A full **5-minute live demo script** (Smart Emptying + Coverage + Fake-cleaning) is in
+[`docs/demo-5min.md`](docs/demo-5min.md).
+
 ## Controlling the device from the laptop
 
 A CLI lives in `src/cli.py` (Home Connect OAuth2 + API client):
@@ -76,6 +81,7 @@ make status       # live status
 make chat MESSAGE="start cleaning"   # AI layer
 make smart-empty  # AI layer: is emptying the dust box justified?
 make watch        # AI layer: live detection of false empties when the robot docks
+make coverage     # AI layer: coverage analysis + fake-cleaning detection from the map
 make test         # unit tests
 ```
 

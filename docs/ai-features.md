@@ -61,6 +61,43 @@ The state machine is pure and unit-tested (`tests/test_smart_empty.py`, `make te
 
 ---
 
+## 2. Coverage analysis — did the robot actually clean the area?
+
+- **Observed**: Cleaning robots *report* that they cleaned, but the API gives no simple
+  "how much did you actually cover?" answer. On the real BCRD2W the only raw evidence is
+  the **cleaning path** (`GET .../map/maps/{mapId}/cleaningStatus` ->
+  `cleaningPathCompressedZstd`, a Zstandard + base64url encoded list of `{x,y}` points)
+  and the **occupancy grid** (`/occupancyGrid` -> `gridMapCompressedZstd`, 800x800 cells,
+  0=unknown, 1=free, 2=obstacle).
+- **AI feature — Coverage analysis**: decode both payloads and compute, from the path
+  itself (scale-independent, since the device omits the grid resolution):
+  - how far the robot travelled (m), its bounding-box span (m),
+  - how many distinct 5 cm cells it entered,
+  - **coverage %** = share of the path's bounding-box cells actually visited (a full
+    sweep ≈ 100%, gaps/misses score much lower).
+- **Status**: `implemented`, unit-tested (`tests/test_coverage.py`), works against the
+  real device.
+- **Where**: `src/ai/coverage.py`; CLI `python -m src.cli coverage` / `make coverage`.
+
+---
+
+## 3. Fake-cleaning detection — "it ran, but cleaned nothing"
+
+- **Observed**: A robot can "clean" for a long time while being stuck (cable, rug
+  fringe, corner) - it reports `OperationState=Run`, drains the battery, but never
+  covers new ground.
+- **AI feature — Fake-cleaning detection**: from the same cleaning path, compute
+  **new cells per metre travelled** (`cells/m`). Healthy lawnmower cleaning produces
+  ~10-20 new cells per metre; a stuck/circling robot keeps revisiting the same handful
+  of cells, so unique cells saturate while distance grows and `cells/m` collapses
+  (circling measured at ~0.25 cells/m). A path that travelled a lot but entered almost
+  no new cells is flagged as **SUSPECTED FAKE CLEANING**.
+- **Status**: `implemented`, unit-tested (synthetic circling path → flagged; dense
+  sweep → normal).
+- **Where**: `src/ai/coverage.py` (`fake_cleaning_verdict`); same `coverage` CLI command.
+
+---
+
 ## Placeholder for the next issues
 
 (new bugs / weaknesses we find while testing the device go here, e.g. map quality,
