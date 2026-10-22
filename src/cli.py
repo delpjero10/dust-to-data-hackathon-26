@@ -15,6 +15,7 @@ import argparse
 import os
 import sys
 
+from .config import load_env
 from .home_connect.auth import (
     DEFAULT_REDIRECT_URI,
     DEFAULT_SCOPES,
@@ -24,26 +25,8 @@ from .home_connect.auth import (
     extract_code_from_url,
 )
 from .home_connect.client import HomeConnectClient
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(SCRIPT_DIR)
-
-
-def load_env(path: str | None = None) -> None:
-    """Minimal .env loader (no external dependency)."""
-    env_path = path or os.path.join(ROOT_DIR, ".env")
-    if not os.path.exists(env_path):
-        return
-    with open(env_path, "r", encoding="utf-8") as fh:
-        for raw_line in fh:
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
-                os.environ[key] = value
+from .ai.agent import VacuumAgent
+from .ai.llm import LLMError
 
 
 def get_credentials() -> tuple[str, str]:
@@ -166,6 +149,18 @@ def cmd_stop(args: argparse.Namespace) -> None:
     print(f"Stopped the active program on {ha_id}.")
 
 
+def cmd_chat(args: argparse.Namespace) -> None:
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    try:
+        agent = VacuumAgent(client)
+    except LLMError as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(1)
+    reply = agent.run(ha_id, args.message)
+    print(reply)
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -185,6 +180,8 @@ def main() -> None:
         help="Cleaning type (Auto, CleanSpot, CleanTurbo, CleanRoom, CleanZone...)",
     )
     sub.add_parser("stop", help="Stop the active program")
+    chat_parser = sub.add_parser("chat", help="Control the device in natural language (AI layer)")
+    chat_parser.add_argument("message", help="What do you want, e.g. 'start cleaning'")
 
     args = parser.parse_args()
     handler = {
@@ -194,6 +191,7 @@ def main() -> None:
         "programs": cmd_programs,
         "start": cmd_start,
         "stop": cmd_stop,
+        "chat": cmd_chat,
     }[args.command]
     handler(args)
 

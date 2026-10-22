@@ -40,6 +40,25 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
    - For your application to interact with home appliances it needs to get authorized by
      the API. When prompted, log in with your Home Connect Account and grant access.
 
+## AI layer (natural-language control)
+
+The `chat` command wires the **Bosch on-prem model** (the same one opencode uses) into
+the device control via `src/ai/`:
+
+```bash
+python -m src.cli chat "start cleaning"
+python -m src.cli chat "stop cleaning"
+python -m src.cli chat "what is the battery level?"
+```
+
+- `src/ai/llm.py` — OpenAI-compatible chat client (the Bosch on-prem endpoint is vLLM).
+- `src/ai/agent.py` — `VacuumAgent`: puts the current device status in the prompt, asks
+  the model for a structured JSON decision, then executes start/stop via the same
+  `HomeConnectClient` the CLI uses.
+- Configure the model with `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` in `.env` (defaults
+  point to the Bosch on-prem endpoint configured in opencode).
+- The model is a reasoning model — leave enough `max_tokens` or the reply may be empty.
+
 ## Safety notes
 
 - ALWAYS confirm program keys/options from `programs` before sending `start` to a

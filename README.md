@@ -56,9 +56,12 @@ python -m src.cli appliances # list your paired appliances
 python -m src.cli start      # start cleaning (Auto)
 python -m src.cli stop       # stop the active cleaning program
 python -m src.cli status     # live status
+python -m src.cli chat "start cleaning"   # AI layer: natural-language control
 ```
 
-See `docs/home-connect-control.md` for details.
+The `chat` command uses the **Bosch on-prem model** (the same one opencode uses) through
+`src/ai/` to turn natural language into device actions. See
+`docs/home-connect-control.md` for the AI layer details.
 
 ## Repo structure
 
