@@ -26,10 +26,19 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 
 ## Setup
 
-1. Create `.env` with your Home Connect developer credentials (from
-   https://developer.home-connect.com).
-2. Install deps: `pip install -r requirements.txt`.
-3. Log in: `python -m src.cli login`.
+1. **Register an application** in the Home Connect Developer Portal:
+   - To experiment with the real API, you will have to create a new application.
+     Host: `https://api.home-connect.com`.
+   - To get started, visit the Home Connect Developer Portal
+     (https://developer.home-connect.com) and register an account. To start testing on a
+     real appliance, you should register an application first.
+   - Note the generated `client_id` / `client_secret` and the allowed redirect URI.
+2. Create `.env` with your Home Connect developer credentials
+   (`HOME_CONNECT_CLIENT_ID`, `HOME_CONNECT_CLIENT_SECRET`).
+3. Install deps: `pip install -r requirements.txt`.
+4. Log in: `python -m src.cli login`.
+   - For your application to interact with home appliances it needs to get authorized by
+     the API. When prompted, log in with your Home Connect Account and grant access.
 
 ## Safety notes
 

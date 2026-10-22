@@ -14,16 +14,22 @@ This repo is a sandbox for the **Bosch Hackathon Belgrade 2026**:
 
 ## Setup
 
-1. Clone the repo and create a local `.env` from your Home Connect developer
+1. Register a developer account + application in the **Home Connect Developer Portal**
+   (https://developer.home-connect.com). To experiment with the real API you have to
+   create a new application (host: `https://api.home-connect.com`); for your application
+   to interact with appliances it must be authorized by the API — register an application
+   first, then log in with your Home Connect Account and grant access.
+
+2. Clone the repo and create a local `.env` from your Home Connect developer
    credentials (never commit it — it's gitignored):
 
    ```bash
    cp .env.example .env   # or create .env manually
    ```
 
-2. Fill in `HOME_CONNECT_CLIENT_ID` and `HOME_CONNECT_CLIENT_SECRET` from the
+3. Fill in `HOME_CONNECT_CLIENT_ID` and `HOME_CONNECT_CLIENT_SECRET` from the
    Home Connect developer portal.
-3. Optionally enable the simulator appliance ("Accept SIMULATOR device") to test
+4. Optionally enable the simulator appliance ("Accept SIMULATOR device") to test
    against a simulated vacuum before touching real hardware.
 
 ## Getting started

@@ -90,6 +90,16 @@ sequenceDiagram
 - **Start/stop**: `PUT`/`DELETE /homeappliances/{haId}/programs/active`.
 - **Status**: `GET /homeappliances/{haId}/status`.
 
+## Getting access to the real API
+
+- To experiment with the real API, you will have to create a new application.
+  Host: `https://api.home-connect.com`.
+- For your application to interact with home appliances it needs to get authorized by the
+  API. To get started, visit the Home Connect Developer Portal
+  (https://developer.home-connect.com) and register an account. To start testing on a
+  real appliance, you should register an application first. When prompted, log in with
+  your Home Connect Account and grant access.
+
 ## Real-device prerequisites (office)
 
 1. The BCRD2W is powered on and **connected to the same Home Connect account** that the
