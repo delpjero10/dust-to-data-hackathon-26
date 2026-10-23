@@ -29,6 +29,7 @@ from .home_connect.client import (
     ROBOT_CLEAN_ALL_PROGRAM,
     ROBOT_GO_HOME_PROGRAM,
     HomeConnectClient,
+    HomeConnectError,
 )
 from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
@@ -181,7 +182,11 @@ def cmd_chat(args: argparse.Namespace) -> None:
     except LLMError as exc:
         print(exc, file=sys.stderr)
         sys.exit(1)
-    reply = agent.run(ha_id, args.message)
+    try:
+        reply = agent.run(ha_id, args.message)
+    except HomeConnectError as exc:
+        print(f"Device error: {exc}", file=sys.stderr)
+        sys.exit(1)
     print(reply)
 
 
@@ -256,6 +261,16 @@ def cmd_watch(args: argparse.Namespace) -> None:
     ha_id = resolve_ha_id(client, args)
     interval = getattr(args, "interval", 5)
     timeout = getattr(args, "timeout", None)
+    min_clean = smart_empty.get_min_clean_seconds()
+
+    print("watch: Smart Emptying live monitor")
+    verbatim = " ".join(sys.argv[2:]) or "(no extra args)"
+    print(f"  invoked : python3 -m src.cli watch {verbatim}")
+    print(f"  ha_id   : {ha_id}")
+    print(f"  interval: {interval} s")
+    print(f"  timeout : {timeout if timeout is not None else 'none (watch until Ctrl-C)'}")
+    print(f"  min clean: {min_clean} s (env AI_MIN_CLEAN_SECONDS)")
+    print()
 
     def emit(event: smart_empty.EmptyEvent) -> None:
         print("\n" + event.reason)

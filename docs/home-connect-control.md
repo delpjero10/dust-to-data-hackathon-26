@@ -65,6 +65,18 @@ python -m src.cli chat "stop cleaning"
 python -m src.cli chat "what is the battery level?"
 ```
 
+The agent is **state-aware** (`VacuumAgent` in `src/ai/agent.py`): it reads the live
+`OperationState` before acting and adapts instead of crashing:
+
+- `Run` / `DelayedStart` → "already cleaning", no duplicate start is sent.
+- `Pause` → a `start` request is turned into `ResumeProgram` (resumes instead of restarting).
+- `Ready` / `Finished` / `Inactive` → `start`/`stop` are sent normally.
+- API errors like `409 SDK.Error.WrongOperationState` are translated into a short,
+  actionable message that names the current state (no raw traceback in your terminal).
+
+Verified on the real BCRD2W: `chat "start cleaning"` works from `Ready` (off the dock),
+and is a harmless no-op while the robot is already running.
+
 ### Smart Emptying (`chat "..."` action `empty`, or `smart-empty`)
 
 Observed bug: the station empties the dust box on every return to base, even when the
