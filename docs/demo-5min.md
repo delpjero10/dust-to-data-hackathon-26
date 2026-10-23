@@ -9,6 +9,8 @@ Home Connect data:
    how much of the area it was in it actually covered.
 3. **Fake-cleaning detection** — flag a robot that "cleaned" for a long time but never
    entered new cells (stuck/circling).
+4. **Obstacle-loop detection & auto-recovery** — if the robot hits something ~3 times in
+   a row, the AI detects it and rolls back to normal (return to base + restart).
 
 Everything runs from the repo root against the real device in the office.
 
@@ -111,7 +113,7 @@ compute, for a live run, how far it went and how thoroughly it covered the area 
 coverage ~78% means it missed ~22% (gaps near obstacles), a number the app never shows
 you."*
 
-### 3:30–4:15 — Feature 3: the fake-cleaning flag
+### 3:30–3:45 — Feature 3: the fake-cleaning flag
 
 Same command, but explain the red-flag case: *"if the robot is stuck (cable, rug
 fringe), it reports `Run` and drains the battery, but it only revisits the same few
@@ -139,6 +141,44 @@ SUSPECTED FAKE CLEANING: robot travelled 179.9 m but only entered 45 distinct ce
 
 And contrast with the healthy run from step 2 (`cells/m = 50`).
 
+### 3:45–4:15 — Feature 4: obstacle-loop detection + recovery (roll back & resume)
+
+Same collected path, obstacle analysis:
+
+```bash
+make obstacles        # read-only: is the robot stuck on an obstacle?
+```
+
+Output when normal:
+
+```
+No obstacle loop: recent 15 points span 1.9 m over 3.1 m of travel (1 reversals).
+Recommendation: The robot is progressing normally - no intervention needed.
+```
+
+Show the *stuck* detector on synthetic data (guaranteed, no hardware needed):
+
+```bash
+python3 - <<'PY'
+from src.ai.obstacle import analyze_obstacles
+pts = [(1000, 1000 + (335 if i % 2 else 0)) for i in range(40)]  # oscillating on the spot
+r = analyze_obstacles(pts)
+print(r["reason"]); print("Recovery:", r["recovery_steps"])
+PY
+```
+
+Expected:
+
+```
+STUCK AT AN OBSTACLE: the robot hit it ~13 times in a row (back-up and re-try). Recent 15 path points stayed within a 0.34 m area while travelling 4.7 m, with 13 direction reversals - it cannot pass and is not covering new ground.
+Recovery: ['stop', 'go_home', 'wait_until_docked', 'restart_cleaning']
+```
+
+Talking point: *"The API has no 'nudge the robot' command, so the AI recovers the way the
+robot always recovers: roll back to base and retry the area. This is the auto-recovery
+(consent-gated): `make obstacles AUTO=1 YES=1`. We demo it read-only so we never surprise
+the audience by restarting the vacuum mid-clean."*
+
 ### 4:15–4:45 — Clean up the robot
 
 Terminal B:
@@ -153,7 +193,7 @@ make status      # show it docking / charging
 
 - *"We treat the vacuum's raw telemetry (status, Zstd map, cleaning path, dock events)
   as data and put AI on top: it catches what the device hides — false empties, missed
-  area, fake cleaning."*
+  area, fake cleaning, and obstacle loops — and can recover the robot."*
 - All of it is deterministic Python + unit-tested; the LLM layer (`make chat`) controls
   the same commands for natural-language demos.
 
@@ -172,6 +212,7 @@ make status      # show it docking / charging
 
 ## Reference
 
-- Code: `src/ai/smart_empty.py`, `src/ai/coverage.py`, `src/ai/agent.py`, `src/cli.py`.
+- Code: `src/ai/smart_empty.py`, `src/ai/coverage.py`, `src/ai/obstacle.py`,
+  `src/ai/agent.py`, `src/cli.py`.
 - Docs: `docs/ai-features.md`, `docs/home-connect-control.md`, `docs/architecture.md`.
 - Tests: `make test` (`tests/`).

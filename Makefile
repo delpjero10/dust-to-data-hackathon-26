@@ -13,7 +13,7 @@ CLI := $(PYTHON) -m src.cli
 
 .DEFAULT_GOAL := help
 
-.PHONY: help login appliances status programs start stop dock chat settings maps robot summaries smart-empty watch coverage coverage-live test
+.PHONY: help login appliances status programs start stop dock chat settings maps robot summaries smart-empty watch coverage coverage-live obstacles test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F'[:#]' '{printf "  %-14s %s\n", $$1, $$3}'
@@ -66,6 +66,9 @@ coverage: ## Coverage analysis + fake-cleaning detection from the map
 COLLECT_SECONDS ?= 45
 coverage-live: ## Coverage: collect the cleaning path live, then analyze (COLLECT_SECONDS=45)
 	$(CLI) coverage --collect $(COLLECT_SECONDS)
+
+obstacles: ## Obstacle-loop detection (AI layer); add AUTO=1 to also recover the robot
+	$(CLI) obstacles $(if $(AUTO),--auto $(if $(YES),--yes,),)
 
 test: ## Run unit tests (stdlib unittest)
 	$(PYTHON) -m unittest discover -s tests -v

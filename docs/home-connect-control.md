@@ -32,6 +32,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `smart-empty` | `GET /homeappliances/{haId}/programs/active` | Smart Emptying: is emptying the dust box justified for the current session? (`AI layer`) |
 | `watch [--interval I] [--timeout T]` | polls `GET /homeappliances/{haId}/status` | Smart Emptying (live): flag a false empty the moment the robot docks (`AI layer`) |
 | `coverage [--map-id M]` | `GET .../map/maps/{M}/occupancyGrid`, `.../cleaningStatus`, `.../robot/position` | Coverage analysis + fake-cleaning detection from the map (`AI layer`) |
+| `obstacles [--auto [--yes]]` | same map endpoints as `coverage` + device control on recovery | Obstacle-loop detection; `--auto` recovers the robot (stop → GoHome → wait dock → restart) (`AI layer`) |
 
 ## Setup
 
@@ -101,6 +102,8 @@ make chat MESSAGE="start cleaning"  # AI layer (natural language)
 make smart-empty                    # AI layer: verdict for the current session
 make watch                          # AI layer: live false-empty detection (Ctrl+C to stop)
 make coverage                       # AI layer: coverage + fake-cleaning from the map
+make obstacles                      # AI layer: obstacle-loop detection (read-only)
+make obstacles AUTO=1 YES=1         # AI layer: detect + auto-recover the robot (real device!)
 make test                           # unit tests (stdlib unittest)
 ```
 

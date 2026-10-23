@@ -32,6 +32,7 @@ from .ai.agent import VacuumAgent
 from .ai.llm import LLMError
 from .ai import smart_empty
 from .ai import coverage as coverage_ai
+from .ai import obstacle as obstacle_ai
 
 
 def get_credentials() -> tuple[str, str]:
@@ -303,6 +304,44 @@ def cmd_coverage(args: argparse.Namespace) -> None:
     print(json.dumps(r, indent=2, default=str))
 
 
+def cmd_obstacles(args: argparse.Namespace) -> None:
+    import json
+
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    r = obstacle_ai.analyze_device_obstacles(
+        client,
+        ha_id,
+        map_id=getattr(args, "map_id", None),
+        collect_seconds=getattr(args, "collect", 0) or 0.0,
+        interval=getattr(args, "interval", 3.0),
+    )
+
+    print(f"Map {r['map_id']} | path points: {r['path_points']}")
+    print(r["reason"])
+    print(f"Recommendation: {r['recommendation']}")
+
+    recovery = None
+    if getattr(args, "auto", False) and r["problem"]:
+        print("\nRecovery plan (touches the real device):")
+        for step in r["recovery_steps"]:
+            print(f"  - {step}")
+        if not getattr(args, "yes", False):
+            answer = input("Execute on the robot? type 'yes': ").strip().lower()
+            if answer != "yes":
+                print("Aborted by user.")
+                recovery = [{"step": "aborted", "ok": False, "detail": "user declined"}]
+        if recovery is None:
+            print("\nExecuting recovery...")
+            recovery = obstacle_ai.run_recovery(client, ha_id)
+            print("Recovery results:")
+            for step in recovery:
+                status = "OK" if step["ok"] else "FAIL"
+                print(f"  [{status}] {step['step']}: {step['detail']}")
+
+    print(json.dumps({"report": r, "recovery": recovery}, indent=2, default=str))
+
+
 def main() -> None:
     load_env()
     parser = argparse.ArgumentParser(description="Home Connect device control")
@@ -366,6 +405,34 @@ def main() -> None:
     coverage_parser.add_argument(
         "--interval", type=float, default=3.0, help="Sampling interval for --collect"
     )
+    obs_parser = sub.add_parser(
+        "obstacles",
+        help="Obstacle-loop detection (AI layer); --auto recovers the robot",
+    )
+    obs_parser.add_argument(
+        "--map-id", type=int, default=None, help="Map id (default: first map)"
+    )
+    obs_parser.add_argument(
+        "--collect",
+        type=float,
+        default=0,
+        help="Collect the cleaning path live for N seconds first (run 'make start' in "
+        "another terminal)",
+    )
+    obs_parser.add_argument(
+        "--interval", type=float, default=3.0, help="Sampling interval for --collect"
+    )
+    obs_parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="If a stuck-at-obstacle is detected, execute recovery on the real device "
+        "(stop -> GoHome -> wait docked -> restart cleaning)",
+    )
+    obs_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompt when using --auto",
+    )
 
     args = parser.parse_args()
     handler = {
@@ -385,6 +452,7 @@ def main() -> None:
         "smart-empty": cmd_smart_empty,
         "watch": cmd_watch,
         "coverage": cmd_coverage,
+        "obstacles": cmd_obstacles,
     }[args.command]
     handler(args)
 

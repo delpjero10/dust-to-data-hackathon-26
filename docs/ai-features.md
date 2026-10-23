@@ -81,7 +81,7 @@ The state machine is pure and unit-tested (`tests/test_smart_empty.py`, `make te
 
 ---
 
-## 3. Fake-cleaning detection — "it ran, but cleaned nothing"
+## 3. Stuck detection — "it ran, but cleaned nothing"
 
 - **Observed**: A robot can "clean" for a long time while being stuck (cable, rug
   fringe, corner) - it reports `OperationState=Run`, drains the battery, but never
@@ -95,6 +95,32 @@ The state machine is pure and unit-tested (`tests/test_smart_empty.py`, `make te
 - **Status**: `implemented`, unit-tested (synthetic circling path → flagged; dense
   sweep → normal).
 - **Where**: `src/ai/coverage.py` (`fake_cleaning_verdict`); same `coverage` CLI command.
+
+---
+
+## 4. Obstacle-loop detection & auto-recovery — the robot keeps hitting the same thing
+
+- **Observed**: When a robot gets stuck (cable, rug fringe, chair leg), it does not give
+  up or ask for help — it keeps driving into the obstacle, backing up and re-trying,
+  draining the battery while never covering new ground. The API exposes no collision
+  telemetry, so the only evidence is the cleaning path itself.
+- **AI feature — Obstacle-loop detection**: look at the **most recent** path window
+  (last 15 points). A healthy robot spans the room in any short window; a stuck one
+  stays within a tiny radius (~0.5 m) while still travelling several metres and
+  reversing direction repeatedly. Each reversal = one failed attempt, so:
+  `hits >= 3` in a small, active window ⇒ **stuck at an obstacle** ("hit it ~3 times in
+  a row"). Normal sweeps never trip it (their windows span the room), and it needs no
+  fragile grid georeferencing. When the occupancy grid carries `resolution`+`origin`,
+  we additionally report precise obstacle-approach counts.
+- **AI feature — Auto-recovery (roll back & resume)**: since there is no manual-drive
+  command, the robot "resets" itself the way it recovers from any situation:
+  **stop → GoHome (return to base) → wait until docked → restart cleaning**. It rolls
+  back to a known-good state and tries the whole area again. All four steps are the
+  exact operations we already verified against the real device.
+- **Status**: `implemented`, unit-tested (`tests/test_obstacle.py`), safe read-only
+  analysis by default; real-device recovery only with explicit `--auto` (+ `--yes`).
+- **Where**: `src/ai/obstacle.py`; CLI `python -m src.cli obstacles [--auto [--yes]]`
+  / `make obstacles` (and `make obstacles AUTO=1 YES=1` for recovery).
 
 ---
 
