@@ -297,6 +297,56 @@ def cmd_watch(args: argparse.Namespace) -> None:
         print("\nStopped watching.")
 
 
+def _robot_spot(r: dict) -> str:
+    """Human description of where the robot is (e.g. 'at the base station')."""
+    pos = (r.get("robot_position") or {}).get("position")
+    base = r.get("base_station") or {}
+    if not pos or not isinstance(base, dict) or "x" not in base:
+        return "unknown"
+    dist = ((pos.get("x", 0) - base.get("x", 0)) ** 2 + (pos.get("y", 0) - base.get("y", 0)) ** 2) ** 0.5
+    where = "at the base station" if dist < 1500 else "in the room"
+    return f"{where} (x={pos.get('x')}, y={pos.get('y')})"
+
+
+def print_coverage_report(r: dict) -> None:
+    g = r["grid"]
+    cell_m2 = (g["resolution_cm"] / 100.0) ** 2
+    free_m2 = (g["free_cells"] or 0) * cell_m2
+    obs_m2 = (g["obstacle_cells"] or 0) * cell_m2
+    total_cells = g["width"] * g["height"]
+    unknown_pct = ((g["unknown_cells"] or 0) / total_cells * 100.0) if total_cells else 0.0
+
+    print("=== Coverage report ===")
+    print()
+    print(f"Map {r['map_id']} ('{r['map_name']}')")
+    print(f"Robot position: {_robot_spot(r)}")
+    print()
+    print("Cleaning effort")
+    print(f"  - Distance travelled:      {r['distance_m']} m")
+    print(f"  - Distinct spots cleaned:  {r['distinct_cells_visited']}")
+    print(f"  - Area swept (span):       {r['path_span_m']} m")
+    cov = r["coverage_percent"]
+    if cov is not None:
+        print(f"  - Coverage of that area:   ~{cov}%")
+    else:
+        print("  - Coverage of that area:   not estimable (path too short)")
+    print()
+    print("Map knowledge")
+    print(f"  - Floor mapped:            ~{free_m2:.1f} m^2 ({g['free_cells']} cells)")
+    print(f"  - Obstacles detected:      ~{obs_m2:.1f} m^2 ({g['obstacle_cells']} cells)")
+    print(f"  - Still unmapped:          ~{unknown_pct:.0f}% of the map canvas")
+    print()
+    print("Health check")
+    if r["fake_cleaning"]:
+        print("  [WARN] " + r["fake_cleaning_reason"])
+    elif r["distance_m"] < 1.0:
+        print("  [INFO] The robot has barely cleaned so far - this reading is not meaningful")
+        print("         yet. Start it and collect live, e.g. `make start`, then")
+        print("         `make coverage-live COLLECT_SECONDS=60`.")
+    else:
+        print("  [OK] " + r["fake_cleaning_reason"])
+
+
 def cmd_coverage(args: argparse.Namespace) -> None:
     import json
 
@@ -309,24 +359,10 @@ def cmd_coverage(args: argparse.Namespace) -> None:
         collect_seconds=getattr(args, "collect", 0) or 0.0,
         interval=getattr(args, "interval", 3.0),
     )
-
-    print(f"Map {r['map_id']} ('{r['map_name']}')")
-    g = r["grid"]
-    print(
-        f"Grid {g['width']}x{g['height']} @ {g['resolution_cm']} cm/cell | "
-        f"free={g['free_cells']} unknown={g['unknown_cells']} obstacles={g['obstacle_cells']}"
-    )
-    print(
-        f"Cleaning path: {r['path_points']} points, {r['distance_m']} m travelled over a "
-        f"{r['path_span_m']} m span, {r['distinct_cells_visited']} distinct cells visited"
-    )
-    if r["coverage_percent"] is not None:
-        print(f"Coverage: ~{r['coverage_percent']}% of the area the robot was in")
-    else:
-        print("Coverage: not estimable (path too short)")
-    print("---")
-    print(r["fake_cleaning_reason"])
-    print(json.dumps(r, indent=2, default=str))
+    if getattr(args, "json", False):
+        print(json.dumps(r, indent=2, default=str))
+        return
+    print_coverage_report(r)
 
 
 def cmd_obstacles(args: argparse.Namespace) -> None:
@@ -430,6 +466,11 @@ def main() -> None:
     )
     coverage_parser.add_argument(
         "--interval", type=float, default=3.0, help="Sampling interval for --collect"
+    )
+    coverage_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the full raw report as JSON instead of the human summary",
     )
     obs_parser = sub.add_parser(
         "obstacles",
