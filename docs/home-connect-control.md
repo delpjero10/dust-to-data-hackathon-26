@@ -32,7 +32,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `summaries` | `GET /homeappliances/{haId}/map/cleaningSummary` | Cleaning summaries (`Map`) |
 | `smart-empty` | `GET /homeappliances/{haId}/programs/active` | Smart Emptying: is emptying the dust box justified for the current session? (`AI layer`) |
 | `watch [--interval I] [--timeout T]` | polls `GET /homeappliances/{haId}/status` | Smart Emptying (live): flag a false empty the moment the robot docks (`AI layer`) |
-| `coverage [--map-id M] [--json]` | `GET .../map/maps/{M}/occupancyGrid`, `.../cleaningStatus`, `.../robot/position` | Coverage analysis + fake-cleaning detection from the map; human summary by default, raw JSON with `--json` (`AI layer`) |
+| `coverage [--map-id M] [--json] [--ai]` | `GET .../map/maps/{M}/occupancyGrid`, `.../cleaningStatus`, `.../robot/position` + LLM (`--ai`) | Coverage analysis + fake-cleaning detection from the map; human summary by default, raw JSON with `--json`, natural-language verdict with `--ai` (`AI layer`) |
 | `obstacles [--auto [--yes]]` | same map endpoints as `coverage` + device control on recovery | Obstacle-loop detection; `--auto` recovers the robot (stop → GoHome → wait dock → restart) (`AI layer`) |
 
 ## Setup
@@ -155,16 +155,23 @@ make watch ARGS="--interval 2 --timeout 60" # tune polling / stop after 60 s
 # AI layer — coverage & fake-cleaning
 make coverage                                # human-readable summary (default)
 make coverage ARGS="--json"                  # same data, raw JSON
+make coverage ARGS="--ai"                    # + AI natural-language verdict on what it means
 make coverage ARGS="--map-id 488755484"
 make coverage-live                           # collect path 45 s, then analyze
 make coverage-live COLLECT_SECONDS=60        # collect 60 s instead
 make coverage-live ARGS="--interval 2"       # sample every 2 s while collecting
+make coverage-live ARGS="--ai"               # collect + analyze + AI verdict
 ```
 
 The default `coverage`/`coverage-live` output is a short **human-readable summary**
 (cleaning effort, map knowledge, health check). If the robot has barely cleaned
 (`distance < 1 m`) it says so instead of printing a misleading coverage % — run
 `make start` in another terminal and re-collect with `make coverage-live`.
+
+With `--ai` the report ends with an **AI insight** block (`src/ai/insight.py`): the LLM
+reads the measured metrics and explains in plain language what the robot did, whether
+that is a problem, and the best next action. It never crashes the report — if the
+model is unconfigured/unavailable it prints a short note instead.
 
 # AI layer — obstacle loop (analysis is read-only)
 make obstacles

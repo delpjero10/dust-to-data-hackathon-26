@@ -363,6 +363,12 @@ def cmd_coverage(args: argparse.Namespace) -> None:
         print(json.dumps(r, indent=2, default=str))
         return
     print_coverage_report(r)
+    if getattr(args, "ai", False):
+        from .ai.insight import ai_insight
+
+        print()
+        print("AI insight (what this means)")
+        print("  " + ai_insight(r).replace("\n", "\n  "))
 
 
 def cmd_obstacles(args: argparse.Namespace) -> None:
@@ -471,6 +477,11 @@ def main() -> None:
         "--json",
         action="store_true",
         help="Print the full raw report as JSON instead of the human summary",
+    )
+    coverage_parser.add_argument(
+        "--ai",
+        action="store_true",
+        help="Also explain the report in natural language with the LLM (AI layer)",
     )
     obs_parser = sub.add_parser(
         "obstacles",
