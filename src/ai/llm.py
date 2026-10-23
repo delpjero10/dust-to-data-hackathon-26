@@ -12,9 +12,11 @@ Configuration (env vars, see `.env.example`):
         AI_API_KEY   bearer token for the endpoint
         AI_MODEL     model id (default: discretestack-stable)
     Anthropic (Claude):
-        ANTHROPIC_API_KEY  API key for api.anthropic.com
-        AI_CLAUDE_BASE_URL base URL (default https://api.anthropic.com)
-        AI_CLAUDE_MODEL    model id (default: claude-sonnet-4-6)
+        ANTHROPIC_API_KEY       API key for api.anthropic.com
+        ANTHROPIC_WORKSPACE_ID  workspace id (required when the API key is not scoped
+                                to a single workspace; sent as anthropic-workspace-id)
+        AI_CLAUDE_BASE_URL      base URL (default https://api.anthropic.com)
+        AI_CLAUDE_MODEL         model id (default: claude-sonnet-4-6)
 """
 
 from __future__ import annotations
@@ -46,7 +48,8 @@ class LLMClient:
 
     OpenAI-compatible config: AI_BASE_URL / AI_API_KEY / AI_MODEL
     Anthropic config:          ANTHROPIC_API_KEY (or AI_CLAUDE_API_KEY),
-                               AI_CLAUDE_BASE_URL, AI_CLAUDE_MODEL
+                               ANTHROPIC_WORKSPACE_ID (optional), AI_CLAUDE_BASE_URL,
+                               AI_CLAUDE_MODEL
     """
 
     def __init__(
@@ -66,6 +69,9 @@ class LLMClient:
                 "ANTHROPIC_API_KEY", ""
             )
             self.model = model or os.environ.get("AI_CLAUDE_MODEL", ANTHROPIC_DEFAULT_MODEL)
+            self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID") or os.environ.get(
+                "AI_CLAUDE_WORKSPACE_ID", ""
+            )
         else:
             self.base_url = (
                 base_url or os.environ.get("AI_BASE_URL") or DEFAULT_BASE_URL
@@ -134,13 +140,16 @@ class LLMClient:
         }
         if system:
             body["system"] = system
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+            "Content-Type": "application/json",
+        }
+        if self.workspace_id:
+            headers["anthropic-workspace-id"] = self.workspace_id
         resp = requests.post(
             f"{self.base_url}/v1/messages",
-            headers={
-                "x-api-key": self.api_key,
-                "anthropic-version": ANTHROPIC_VERSION,
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             json=body,
             timeout=90,
         )
