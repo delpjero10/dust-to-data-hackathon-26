@@ -82,7 +82,7 @@ make dock         # send the robot back to base (GoHome)
 make status       # live status
 make chat MESSAGE="start cleaning"   # AI layer
 make smart-empty  # AI layer: is emptying the dust box justified?
-make watch        # AI layer: live detection of false empties when the robot docks
+make watch        # AI layer: live logger (status changes + events, false-empty on dock)
 make coverage     # AI layer: coverage analysis + fake-cleaning detection from the map
 make obstacles    # AI layer: obstacle-loop detection (read-only)
 make test         # unit tests

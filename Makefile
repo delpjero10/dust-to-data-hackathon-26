@@ -65,7 +65,7 @@ summaries: ## Show cleaning summaries
 smart-empty: ## Smart Emptying verdict for the current session
 	$(CLI) smart-empty
 
-watch: ## Smart Emptying (live): flag a false empty when the robot docks
+watch: ## Live device logger: log status changes and events (incl. dock/false-empty)
 	$(CLI) watch $(ARGS)
 
 coverage: ## Coverage analysis + fake-cleaning detection from the map

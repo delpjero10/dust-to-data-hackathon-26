@@ -256,45 +256,51 @@ def cmd_smart_empty(args: argparse.Namespace) -> None:
 
 def cmd_watch(args: argparse.Namespace) -> None:
     import json
+    import time
+
+    from .ai import live_log
 
     client = build_client()
     ha_id = resolve_ha_id(client, args)
     interval = getattr(args, "interval", 5)
     timeout = getattr(args, "timeout", None)
-    min_clean = smart_empty.get_min_clean_seconds()
 
-    print("watch: Smart Emptying live monitor")
+    print("watch: live device logger (status changes + events)")
     verbatim = " ".join(sys.argv[2:]) or "(no extra args)"
     print(f"  invoked : python3 -m src.cli watch {verbatim}")
     print(f"  ha_id   : {ha_id}")
     print(f"  interval: {interval} s")
     print(f"  timeout : {timeout if timeout is not None else 'none (watch until Ctrl-C)'}")
-    print(f"  min clean: {min_clean} s (env AI_MIN_CLEAN_SECONDS)")
     print()
 
-    def emit(event: smart_empty.EmptyEvent) -> None:
-        print("\n" + event.reason)
-        print(
-            json.dumps(
-                {
-                    "cleaning_seconds": round(event.cleaning_seconds, 1),
-                    "empty_justified": event.empty_justified,
-                    "min_clean_seconds": event.min_clean_seconds,
-                },
-                indent=2,
-            )
-        )
+    logger = live_log.LiveLogger()
+    started = time.time()
+    while True:
+        if timeout is not None and time.time() - started > timeout:
+            print(f"Timeout: nothing more after {timeout} s - stopping.")
+            return
+        try:
+            status_items = client.get_status(ha_id)
+        except Exception as exc:  # noqa: BLE001 - keep watching through API hiccups
+            print(f"(status fetch failed, retrying: {exc})")
+            time.sleep(interval)
+            continue
 
-    try:
-        smart_empty.watch(
-            client,
-            ha_id,
-            interval=interval,
-            timeout=timeout,
-            on_event=emit,
-        )
-    except KeyboardInterrupt:
-        print("\nStopped watching.")
+        lines, event = logger.on_status(status_items)
+        for line in lines:
+            print(f"[{live_log.timestamp()}] {line}")
+        if event is not None:
+            print(
+                json.dumps(
+                    {
+                        "cleaning_seconds": round(event.cleaning_seconds, 1),
+                        "empty_justified": event.empty_justified,
+                        "min_clean_seconds": event.min_clean_seconds,
+                    },
+                    indent=2,
+                )
+            )
+        time.sleep(interval)
 
 
 def _robot_spot(r: dict) -> str:
@@ -445,7 +451,8 @@ def main() -> None:
     )
     watch_parser = sub.add_parser(
         "watch",
-        help="Smart Emptying (live): detect a false empty the moment the robot docks (AI layer)",
+        help="Live device logger: log status changes and events as they happen "
+        "(Ctrl-C to stop)",
     )
     watch_parser.add_argument(
         "--interval", type=float, default=5.0, help="Polling interval in seconds (default 5)"

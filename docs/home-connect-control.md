@@ -31,7 +31,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `robot` | `GET /homeappliances/{haId}/map/robot/position` | Robot position (`Map`) |
 | `summaries` | `GET /homeappliances/{haId}/map/cleaningSummary` | Cleaning summaries (`Map`) |
 | `smart-empty` | `GET /homeappliances/{haId}/programs/active` | Smart Emptying: is emptying the dust box justified for the current session? (`AI layer`) |
-| `watch [--interval I] [--timeout T]` | polls `GET /homeappliances/{haId}/status` | Smart Emptying (live): flag a false empty the moment the robot docks (`AI layer`) |
+| `watch [--interval I] [--timeout T]` | polls `GET /homeappliances/{haId}/status` | Live device logger: log status changes and events as they happen; still flags a false empty when the robot docks (`AI layer`) |
 | `coverage [--map-id M] [--json] [--ai]` | `GET .../map/maps/{M}/occupancyGrid`, `.../cleaningStatus`, `.../robot/position` + LLM (`--ai`) | Coverage analysis + fake-cleaning detection from the map; human summary by default, raw JSON with `--json`, natural-language verdict with `--ai` (`AI layer`) |
 | `obstacles [--auto [--yes]]` | same map endpoints as `coverage` + device control on recovery | Obstacle-loop detection; `--auto` recovers the robot (stop → GoHome → wait dock → restart) (`AI layer`) |
 
@@ -123,7 +123,7 @@ with `make -C ~/Code/dust-to-data-hackathon-26 <target>`. `make help` lists all 
 | `make robot` | Show robot position |
 | `make summaries` | Show cleaning summaries |
 | `make smart-empty` | AI: is emptying the dust box justified? |
-| `make watch` | AI: live false-empty detection (Ctrl+C to stop) |
+| `make watch` | AI: live device logger (status changes + events; Ctrl+C to stop) |
 | `make coverage` | AI: coverage analysis + fake-cleaning from the map |
 | `make coverage-live` | AI: collect the path live (`COLLECT_SECONDS=45`s), then analyze |
 | `make obstacles` | AI: obstacle-loop detection (read-only) |
@@ -147,9 +147,9 @@ make chat MESSAGE="stop cleaning"
 make chat MESSAGE="what is the battery level?"
 make chat MESSAGE="should I empty the dust box?"
 
-# AI layer — smart emptying
-make smart-empty
-make watch                                  # wait until the robot docks, flag false empty
+# AI layer — smart emptying + live logger
+make smart-empty                            # verdict for the current session
+make watch                                  # log state changes live; false-empty verdict on dock
 make watch ARGS="--interval 2 --timeout 60" # tune polling / stop after 60 s
 
 # AI layer — coverage & fake-cleaning
