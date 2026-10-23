@@ -90,21 +90,70 @@ layer (see `docs/ai-features.md`).
 
 ## Fast start from the terminal (no opencode)
 
-The `Makefile` in the repo root wraps the common commands, so you can run them directly:
+The `Makefile` in the repo root wraps the CLI. Run from the repo root, or from anywhere
+with `make -C ~/Code/dust-to-data-hackathon-26 <target>`. `make help` lists all targets.
+
+### All `make` commands
+
+| make command | What it does |
+| --- | --- |
+| `make login` | One-time OAuth login (stores token in `.token.json`) |
+| `make appliances` | List paired appliances |
+| `make status` | Live status (state, battery) |
+| `make programs` | List available programs |
+| `make start` | Start cleaning (`CleanAll`) |
+| `make stop` | Stop the active program |
+| `make dock` | Send the robot back to base (`GoHome`) |
+| `make settings` | List device settings |
+| `make maps` | List robot maps |
+| `make robot` | Show robot position |
+| `make summaries` | Show cleaning summaries |
+| `make smart-empty` | AI: is emptying the dust box justified? |
+| `make watch` | AI: live false-empty detection (Ctrl+C to stop) |
+| `make coverage` | AI: coverage analysis + fake-cleaning from the map |
+| `make coverage-live` | AI: collect the path live (`COLLECT_SECONDS=45`s), then analyze |
+| `make obstacles` | AI: obstacle-loop detection (read-only) |
+| `make obstacles AUTO=1 YES=1` | AI: detect + auto-recover the robot (stop → dock → restart) — **touches the device** |
+| `make test` | Run unit tests |
+| `make help` | List all targets |
+
+### Examples with options
 
 ```bash
-make login                          # one-time auth
-make start                          # start cleaning (CleanAll)
-make stop                           # stop cleaning
-make dock                           # send robot back to base (GoHome)
-make status                         # live status
-make chat MESSAGE="start cleaning"  # AI layer (natural language)
-make smart-empty                    # AI layer: verdict for the current session
-make watch                          # AI layer: live false-empty detection (Ctrl+C to stop)
-make coverage                       # AI layer: coverage + fake-cleaning from the map
-make obstacles                      # AI layer: obstacle-loop detection (read-only)
-make obstacles AUTO=1 YES=1         # AI layer: detect + auto-recover the robot (real device!)
-make test                           # unit tests (stdlib unittest)
+# start / stop / return to base
+make start
+make stop
+make dock
+make status
+
+# AI layer — natural language
+make chat MESSAGE="start cleaning"
+make chat MESSAGE="stop cleaning"
+make chat MESSAGE="what is the battery level?"
+make chat MESSAGE="should I empty the dust box?"
+
+# AI layer — smart emptying
+make smart-empty
+make watch                                  # wait until the robot docks, flag false empty
+make watch ARGS="--interval 2 --timeout 60" # tune polling / stop after 60 s
+
+# AI layer — coverage & fake-cleaning
+make coverage
+make coverage ARGS="--map-id 488755484"
+make coverage-live                           # collect path 45 s, then analyze
+make coverage-live COLLECT_SECONDS=60        # collect 60 s instead
+make coverage-live ARGS="--interval 2"       # sample every 2 s while collecting
+
+# AI layer — obstacle loop (analysis is read-only)
+make obstacles
+make obstacles ARGS="--collect 45"           # collect live path, then analyze
+
+# AI layer — obstacle loop + auto-recovery (REAL DEVICE: stops, docks, restarts)
+make obstacles AUTO=1                        # will ask for confirmation
+make obstacles AUTO=1 YES=1                  # skip confirmation (fully automatic)
+
+# from anywhere
+make -C ~/Code/dust-to-data-hackathon-26 start
 ```
 
 Optional shortcut for your shell config (`~/.zshrc`):
@@ -113,7 +162,7 @@ Optional shortcut for your shell config (`~/.zshrc`):
 alias vacuum='make -C ~/Code/dust-to-data-hackathon-26'
 ```
 
-Then `vacuum start`, `vacuum stop`, `vacuum status`, ...
+Then `vacuum start`, `vacuum stop`, `vacuum status`, `vacuum chat MESSAGE="start cleaning"`, ...
 
 ## Safety notes
 

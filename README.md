@@ -86,6 +86,9 @@ make obstacles    # AI layer: obstacle-loop detection (read-only)
 make test         # unit tests
 ```
 
+The complete reference for every `make` command (with options and examples) is in
+[`docs/home-connect-control.md`](docs/home-connect-control.md) &rarr; "All `make` commands".
+
 Optional: put this in your shell config (`~/.zshrc`) so `vacuum ...` works from anywhere:
 
 ```bash

@@ -2,14 +2,19 @@
 # (no opencode needed). Run from the repo root, or use
 #   make -C ~/Code/dust-to-data-hackathon-26 start
 #
-# Examples:
+# Examples (full reference: docs/home-connect-control.md):
 #   make start                              # start cleaning (CleanAll)
 #   make stop                               # stop cleaning
 #   make status                             # live status
 #   make chat MESSAGE="start cleaning"      # AI layer (natural language)
+#   make watch ARGS="--interval 2"          # pass extra CLI args via ARGS
+#   make coverage-live COLLECT_SECONDS=60   # collect the path 60 s, then analyze
+#   make obstacles AUTO=1 YES=1             # detect + auto-recover (real device)
 
 PYTHON ?= python3
 CLI := $(PYTHON) -m src.cli
+# Extra CLI arguments, e.g.  make coverage ARGS="--map-id 123 --collect 30"
+ARGS :=
 
 .DEFAULT_GOAL := help
 
@@ -58,17 +63,17 @@ smart-empty: ## Smart Emptying verdict for the current session
 	$(CLI) smart-empty
 
 watch: ## Smart Emptying (live): flag a false empty when the robot docks
-	$(CLI) watch
+	$(CLI) watch $(ARGS)
 
 coverage: ## Coverage analysis + fake-cleaning detection from the map
-	$(CLI) coverage
+	$(CLI) coverage $(ARGS)
 
 COLLECT_SECONDS ?= 45
 coverage-live: ## Coverage: collect the cleaning path live, then analyze (COLLECT_SECONDS=45)
-	$(CLI) coverage --collect $(COLLECT_SECONDS)
+	$(CLI) coverage --collect $(COLLECT_SECONDS) $(ARGS)
 
 obstacles: ## Obstacle-loop detection (AI layer); add AUTO=1 to also recover the robot
-	$(CLI) obstacles $(if $(AUTO),--auto $(if $(YES),--yes,),)
+	$(CLI) obstacles $(ARGS) $(if $(AUTO),--auto $(if $(YES),--yes,),)
 
 test: ## Run unit tests (stdlib unittest)
 	$(PYTHON) -m unittest discover -s tests -v
