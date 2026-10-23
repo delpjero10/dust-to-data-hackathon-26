@@ -167,10 +167,34 @@ def cmd_resume(args: argparse.Namespace) -> None:
     print(f"Resumed cleaning on {ha_id}.")
 
 
+def is_docked(client: HomeConnectClient, ha_id: str) -> bool:
+    """Is the robot currently on its charging base? (Ready + Charging.)"""
+    values = {i.get("key"): i.get("value") for i in client.get_status(ha_id)}
+    return (
+        values.get("BSH.Common.Status.OperationState")
+        == "BSH.Common.EnumType.OperationState.Ready"
+        and values.get("BSH.Common.Status.BatteryChargingState")
+        == "BSH.Common.EnumType.BatteryChargingState.Charging"
+    )
+
+
 def cmd_dock(args: argparse.Namespace) -> None:
     client = build_client()
     ha_id = resolve_ha_id(client, args)
-    client.start_program(ha_id, ROBOT_GO_HOME_PROGRAM)
+    if is_docked(client, ha_id):
+        print(f"The robot is already docked and charging on {ha_id} - nothing to do.")
+        return
+    # GoHome is only startable while the robot is off the dock; being on the dock
+    # makes the API return 409 SDK.Error.ProgramNotStartable (see client.py notes).
+    try:
+        client.start_program(ha_id, ROBOT_GO_HOME_PROGRAM)
+    except HomeConnectError as exc:
+        print(
+            f"Dock failed: the API could not start the GoHome program ({exc}). "
+            "This usually means the robot is already at its base.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     print(f"Sending the robot back to base (GoHome) on {ha_id}.")
 
 

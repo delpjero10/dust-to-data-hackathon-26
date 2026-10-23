@@ -24,7 +24,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `start` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanAll` program) |
 | `stop` | `DELETE /homeappliances/{haId}/programs/active` | Stop the active program |
 | `resume` | `PUT /homeappliances/{haId}/commands/BSH.Common.Command.ResumeProgram` | Resume (unpause) the active program |
-| `dock` | `PUT /homeappliances/{haId}/programs/active` | Send the robot back to base (`GoHome` program) |
+| `dock` | `PUT /homeappliances/{haId}/programs/active` | Send the robot back to base (`GoHome` program); no-op if already docked |
 | `settings` | `GET /homeappliances/{haId}/settings` | List device settings (`Settings`) |
 | `maps` | `GET /homeappliances/{haId}/map/maps` | List robot maps (`Map`) |
 | `mapinfo --map-id M [--field F]` | `GET .../map/maps/{M}[/...]` | Map data JSON: occupancyGrid, layout, cleaningStatus, objects, rooms, zones (`Map`) |
@@ -117,7 +117,7 @@ with `make -C ~/Code/dust-to-data-hackathon-26 <target>`. `make help` lists all 
 | `make start` | Start cleaning (`CleanAll`) |
 | `make stop` | Stop the active program |
 | `make resume` | Resume (unpause) the active program (`ResumeProgram` command) |
-| `make dock` | Send the robot back to base (`GoHome`) |
+| `make dock` | Send the robot back to base (`GoHome`); no-op if already docked |
 | `make settings` | List device settings |
 | `make maps` | List robot maps |
 | `make robot` | Show robot position |
@@ -204,5 +204,8 @@ Then `vacuum start`, `vacuum stop`, `vacuum status`, `vacuum chat MESSAGE="start
   captured in `ROBOT_CLEAN_ALL_PROGRAM` in `src/home_connect/client.py`.
 - To return the robot to base use the `GoHome` program
   (`ConsumerProducts.CleaningRobot.Program.Basic.GoHome`, the `dock` command). It is
-  only listed by `/programs/available` while the robot is off the dock.
+  only listed by `/programs/available` while the robot is off the dock; if the robot is
+  already home (Ready + Charging), `dock` is a no-op and the API would reject `GoHome`
+  with `409 SDK.Error.ProgramNotStartable` — the CLI detects this and reports it
+  instead of crashing.
 - Prefer the Home Connect SIMULATOR appliance for development.
