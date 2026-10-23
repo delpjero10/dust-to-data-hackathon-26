@@ -18,7 +18,7 @@ ARGS :=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help login appliances status programs start stop dock chat settings maps robot summaries smart-empty watch coverage coverage-live obstacles test
+.PHONY: help login appliances status programs start stop resume dock chat settings maps robot summaries smart-empty watch coverage coverage-live obstacles test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F'[:#]' '{printf "  %-14s %s\n", $$1, $$3}'
@@ -40,6 +40,9 @@ start: ## Start cleaning (CleanAll)
 
 stop: ## Stop the active program
 	$(CLI) stop
+
+resume: ## Resume (unpause) the active program
+	$(CLI) resume
 
 dock: ## Send the robot back to base (GoHome program)
 	$(CLI) dock

@@ -23,6 +23,7 @@ See `hcsdk-production.yaml` for the authoritative endpoint definitions.
 | `programs` | `GET /homeappliances/{haId}/programs/available` | List available programs |
 | `start` | `PUT /homeappliances/{haId}/programs/active` | Start cleaning (`CleanAll` program) |
 | `stop` | `DELETE /homeappliances/{haId}/programs/active` | Stop the active program |
+| `resume` | `PUT /homeappliances/{haId}/commands/BSH.Common.Command.ResumeProgram` | Resume (unpause) the active program |
 | `dock` | `PUT /homeappliances/{haId}/programs/active` | Send the robot back to base (`GoHome` program) |
 | `settings` | `GET /homeappliances/{haId}/settings` | List device settings (`Settings`) |
 | `maps` | `GET /homeappliances/{haId}/map/maps` | List robot maps (`Map`) |
@@ -103,6 +104,7 @@ with `make -C ~/Code/dust-to-data-hackathon-26 <target>`. `make help` lists all 
 | `make programs` | List available programs |
 | `make start` | Start cleaning (`CleanAll`) |
 | `make stop` | Stop the active program |
+| `make resume` | Resume (unpause) the active program (`ResumeProgram` command) |
 | `make dock` | Send the robot back to base (`GoHome`) |
 | `make settings` | List device settings |
 | `make maps` | List robot maps |
@@ -120,9 +122,10 @@ with `make -C ~/Code/dust-to-data-hackathon-26 <target>`. `make help` lists all 
 ### Examples with options
 
 ```bash
-# start / stop / return to base
+# start / stop / resume / return to base
 make start
 make stop
+make resume
 make dock
 make status
 

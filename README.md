@@ -60,6 +60,7 @@ python -m src.cli login      # one-time auth, stores token in .token.json
 python -m src.cli appliances # list your paired appliances
 python -m src.cli start      # start cleaning (CleanAll)
 python -m src.cli stop       # stop the active cleaning program
+python -m src.cli resume     # resume (unpause) the active cleaning program
 python -m src.cli status     # live status
 python -m src.cli chat "start cleaning"   # AI layer: natural-language control
 ```
@@ -76,6 +77,7 @@ Use the `Makefile` shortcuts from the repo root:
 ```bash
 make start        # start cleaning (CleanAll)
 make stop         # stop cleaning
+make resume       # resume (unpause) cleaning
 make dock         # send the robot back to base (GoHome)
 make status       # live status
 make chat MESSAGE="start cleaning"   # AI layer

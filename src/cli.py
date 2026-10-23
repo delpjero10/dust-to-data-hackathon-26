@@ -6,6 +6,7 @@ Examples:
     python -m src.cli status
     python -m src.cli start            # start cleaning (BSH: CleanAll program)
     python -m src.cli stop
+    python -m src.cli resume           # resume (unpause) cleaning
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from .home_connect.auth import (
     extract_code_from_url,
 )
 from .home_connect.client import (
+    COMMAND_RESUME,
     ROBOT_CLEAN_ALL_PROGRAM,
     ROBOT_GO_HOME_PROGRAM,
     HomeConnectClient,
@@ -154,6 +156,14 @@ def cmd_stop(args: argparse.Namespace) -> None:
     ha_id = resolve_ha_id(client, args)
     client.stop_program(ha_id)
     print(f"Stopped the active program on {ha_id}.")
+
+
+def cmd_resume(args: argparse.Namespace) -> None:
+    client = build_client()
+    ha_id = resolve_ha_id(client, args)
+    # ResumeProgram unpauses a paused cleaning (BSH.Common.Command.ResumeProgram).
+    client.execute_command(ha_id, COMMAND_RESUME)
+    print(f"Resumed cleaning on {ha_id}.")
 
 
 def cmd_dock(args: argparse.Namespace) -> None:
@@ -356,6 +366,7 @@ def main() -> None:
     sub.add_parser("programs", help="List available programs")
     sub.add_parser("start", help="Start cleaning (BSH: CleanAll program)")
     sub.add_parser("stop", help="Stop the active program")
+    sub.add_parser("resume", help="Resume (unpause) the active program")
     sub.add_parser("dock", help="Send the robot back to base (GoHome program)")
     chat_parser = sub.add_parser("chat", help="Control the device in natural language (AI layer)")
     chat_parser.add_argument("message", help="What do you want, e.g. 'start cleaning'")
@@ -442,6 +453,7 @@ def main() -> None:
         "programs": cmd_programs,
         "start": cmd_start,
         "stop": cmd_stop,
+        "resume": cmd_resume,
         "dock": cmd_dock,
         "chat": cmd_chat,
         "settings": cmd_settings,

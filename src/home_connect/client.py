@@ -31,6 +31,11 @@ ROBOT_CLEAN_ALL_PROGRAM = "ConsumerProducts.CleaningRobot.Program.Cleaning.Clean
 # exactly the moment the station runs the (often unjustified) dust-box empty.
 ROBOT_GO_HOME_PROGRAM = "ConsumerProducts.CleaningRobot.Program.Basic.GoHome"
 
+# One-shot commands exposed by the BCRD2W (see GET .../commands).
+COMMAND_PAUSE = "BSH.Common.Command.PauseProgram"
+COMMAND_RESUME = "BSH.Common.Command.ResumeProgram"
+COMMAND_ACKNOWLEDGE_EVENT = "BSH.Common.Command.AcknowledgeEvent"
+
 
 class HomeConnectError(Exception):
     """Raised when the Home Connect API returns an error."""
@@ -143,6 +148,15 @@ class HomeConnectClient:
     def stop_program(self, ha_id: str) -> None:
         """DELETE /homeappliances/{haId}/programs/active — stop the running program."""
         self._request("DELETE", f"/homeappliances/{ha_id}/programs/active")
+
+    def execute_command(self, ha_id: str, commandkey: str, value=True) -> None:
+        """PUT /homeappliances/{haId}/commands/{commandkey} — execute one command.
+
+        For the BCRD2W the available commands are PauseProgram / ResumeProgram /
+        AcknowledgeEvent (see `GET .../commands`). Example: `execute_command(ha, "BSH.Common.Command.ResumeProgram")`.
+        """
+        body = {"data": {"key": commandkey, "value": value}}
+        self._request("PUT", f"/homeappliances/{ha_id}/commands/{commandkey}", json=body)
 
     # -- status --------------------------------------------------------------
     def get_status(self, ha_id: str) -> list[dict]:
